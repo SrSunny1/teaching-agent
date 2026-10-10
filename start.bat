@@ -1,6 +1,9 @@
 @echo off
-rem 材料物理实验教学 Agent · Windows 一键启动（双击运行）
-rem 会开两个新窗口（后端 / 前端）并打开浏览器。
+rem ============================================================
+rem  Material Physics Lab Teaching Agent - Windows start
+rem  Double-click to run. Opens backend + frontend windows
+rem  and your browser. Closing those windows stops the servers.
+rem ============================================================
 cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -File "start.ps1"
 pause

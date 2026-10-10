@@ -1,4 +1,4 @@
-# 材料物理实验教学 Agent · Windows 装环境
+﻿# 材料物理实验教学 Agent · Windows 装环境
 # 在项目根目录跑：  .\setup.ps1
 # 每台机器跑一次即可。
 #
