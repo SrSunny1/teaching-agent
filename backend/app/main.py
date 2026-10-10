@@ -1,0 +1,86 @@
+"""FastAPI 入口。只有两个端点，契约见 README.md 的「三、契约」。"""
+from __future__ import annotations
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+
+from . import config
+from .chat import run_chat
+from .events import encode
+from .tools import TOOLS
+
+app = FastAPI(title="材料物理实验教学 Agent", version="0.1.0")
+
+# 竞赛演示用，放开 CORS。生产环境应收紧。
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    session_id: str = "local"
+    messages: list[ChatMessage]
+
+
+@app.get("/")
+async def root() -> dict:
+    """根路径说明。
+
+    后端是 API 服务，本身没有页面 —— 直接打开 :8000 只会看到一句 Not Found，
+    容易让人以为项目坏了。这里明确告诉访问者界面在哪。
+    """
+    return {
+        "service": "材料物理实验教学 Agent · 后端 API",
+        "notice": "这是后端 API，不是界面。",
+        "ui": "http://localhost:5173",
+        "endpoints": {
+            "GET /health": "健康检查（前端启动时探测它）",
+            "POST /chat": "对话（SSE 流式，契约见 README.md 的「三、契约」）",
+            "GET /docs": "自动生成的接口文档",
+        },
+        "model": config.MODEL,
+        "has_key": bool(config.API_KEY),
+        "tools": sorted(TOOLS),
+    }
+
+
+@app.get("/health")
+async def health() -> dict:
+    """前端启动时探测这个端点，决定走真实流还是 mock。"""
+    return {
+        "ok": True,
+        "model": config.MODEL,
+        "has_key": bool(config.API_KEY),
+        "tools": sorted(TOOLS),
+    }
+
+
+@app.post("/chat")
+async def chat(req: ChatRequest) -> StreamingResponse:
+    history = [m.model_dump() for m in req.messages]
+
+    async def gen():
+        async for event in run_chat(history):
+            yield encode(event)
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            # 关掉 nginx 之类反代的缓冲，否则流式会被攒成一坨
+            "X-Accel-Buffering": "no",
+        },
+    )

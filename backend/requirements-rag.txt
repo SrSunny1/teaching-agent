@@ -1,0 +1,10 @@
+# 可选：向量检索依赖。
+#
+# 仅当你要把 search_knowledge 从关键词打分升级成「向量 + 关键词」混合召回时才装：
+#   pip install -r requirements-rag.txt
+#
+# 装完后在 search_knowledge 里实现向量召回，向量库不可用时必须自动退回关键词检索
+# （保证演示不中断）。详见该文件里的 TODO。
+#
+# ⚠️ 这一组约 120MB，部分机器上 onnxruntime 可能装不上。所以不放进主 requirements.txt。
+chromadb>=0.5.15
