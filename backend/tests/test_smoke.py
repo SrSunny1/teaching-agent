@@ -10,6 +10,14 @@
 
 ★ 改动 simulate_heat_treatment 的 TEMPER_CURVE，或改动 chat.py 的流式解析后，必须重跑。
 """
+# ─────────────────────────────────────────────────────────────
+# ★ 控制台输出只用 GBK 能编码的符号：√（通过）和 ×（失败）。
+#   不要改成 ✓ ✗ —— 它们在 GBK 里不存在（U+2713 / U+2717）。
+#   Windows 中文控制台默认 cp936，一旦输出被重定向（管道/存文件/agent 抓取），
+#   Python 会用 cp936 编码 stdout，遇到编不了的字符直接抛 UnicodeEncodeError 崩掉。
+#   在 Windows 上实测过：✓ → exit=1 + UnicodeEncodeError；√ → exit=0。
+# ─────────────────────────────────────────────────────────────
+
 from __future__ import annotations
 
 import asyncio
@@ -24,7 +32,7 @@ FAILURES: list[str] = []
 
 
 def check(ok: bool, label: str, extra: str = "") -> None:
-    print(f"  {'✓' if ok else '✗'} {label}")
+    print(f"  {'√' if ok else '×'} {label}")
     if extra:
         print(f"      {extra}")
     if not ok:
@@ -231,11 +239,11 @@ def main() -> int:
 
     print("\n" + "=" * 62)
     if FAILURES:
-        print(f"✗ {len(FAILURES)} 项失败：")
+        print(f"× {len(FAILURES)} 项失败：")
         for f in FAILURES:
             print(f"    - {f}")
         return 1
-    print("✓ 全部通过")
+    print("√ 全部通过")
     return 0
 
 

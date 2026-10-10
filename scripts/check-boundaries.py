@@ -14,6 +14,14 @@
 这些是「大家都能看到框架、但不能随意改」的技术保障：
 光写在文档里的规则会被违反，能跑出红字的规则不会。
 """
+# ─────────────────────────────────────────────────────────────
+# ★ 控制台输出只用 GBK 能编码的符号：√（通过）和 ×（失败）。
+#   不要改成 ✓ ✗ —— 它们在 GBK 里不存在（U+2713 / U+2717）。
+#   Windows 中文控制台默认 cp936，一旦输出被重定向（管道/存文件/agent 抓取），
+#   Python 会用 cp936 编码 stdout，遇到编不了的字符直接抛 UnicodeEncodeError 崩掉。
+#   在 Windows 上实测过：✓ → exit=1 + UnicodeEncodeError；√ → exit=0。
+# ─────────────────────────────────────────────────────────────
+
 from __future__ import annotations
 
 import re
@@ -84,7 +92,7 @@ def check_isolation() -> None:
                     violations += 1
 
     if not violations:
-        print("    ✓ 没有跨边界 import")
+        print("    √ 没有跨边界 import")
 
 
 def check_registration() -> None:
@@ -105,7 +113,7 @@ def check_registration() -> None:
         if f"id: '{feat.name}'" not in text and f'id: "{feat.name}"' not in text:
             problems.append(f"{rel(idx)} 的 id 与文件夹名 {feat.name} 不一致 → 会注册成两个功能")
     if not missing:
-        print(f"    ✓ {len(list(p for p in FEATURES.iterdir() if p.is_dir()))} 个功能都已正确注册")
+        print(f"    √ {len(list(p for p in FEATURES.iterdir() if p.is_dir()))} 个功能都已正确注册")
 
 
 def check_artifact_types() -> None:
@@ -131,7 +139,7 @@ def check_artifact_types() -> None:
                 dupes += 1
             owner[t] = feat.name
     if not dupes:
-        print(f"    ✓ {len(owner)} 个 artifactType 无冲突")
+        print(f"    √ {len(owner)} 个 artifactType 无冲突")
 
 
 def check_tool_names() -> None:
@@ -159,7 +167,7 @@ def check_tool_names() -> None:
             bad += 1
     if not bad:
         n = len([p for p in tools_dir.iterdir() if p.is_dir() and not p.name.startswith("_")])
-        print(f"    ✓ {n} 个工具命名与目录一致")
+        print(f"    √ {n} 个工具命名与目录一致")
 
 
 def main() -> int:
@@ -173,12 +181,12 @@ def main() -> int:
 
     print("\n" + "=" * 62)
     if problems:
-        print(f"✗ {len(problems)} 处越界或配置错误：\n")
+        print(f"× {len(problems)} 处越界或配置错误：\n")
         for p in problems:
             print(f"  - {p}")
         print("\n规则见 协作流程.md 的「三、协作规则」")
         return 1
-    print("✓ 全部通过")
+    print("√ 全部通过")
     return 0
 
 

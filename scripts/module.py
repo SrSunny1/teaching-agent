@@ -12,6 +12,14 @@
 
 `rm` 只删骨架，不会动你已经写进去的代码之外的东西；它会告诉你还剩哪些地方要手工清理。
 """
+# ─────────────────────────────────────────────────────────────
+# ★ 控制台输出只用 GBK 能编码的符号：√（通过）和 ×（失败）。
+#   不要改成 ✓ ✗ —— 它们在 GBK 里不存在（U+2713 / U+2717）。
+#   Windows 中文控制台默认 cp936，一旦输出被重定向（管道/存文件/agent 抓取），
+#   Python 会用 cp936 编码 stdout，遇到编不了的字符直接抛 UnicodeEncodeError 崩掉。
+#   在 Windows 上实测过：✓ → exit=1 + UnicodeEncodeError；√ → exit=0。
+# ─────────────────────────────────────────────────────────────
+
 from __future__ import annotations
 
 import argparse
@@ -201,19 +209,19 @@ def cmd_list(_args) -> int:
 def cmd_new(args) -> int:
     name = args.name
     if not NAME_RE.match(name):
-        print(f"✗ 名字「{name}」不合法。要求：小写字母开头，只含字母/数字/下划线，例如 structure3d")
+        print(f"× 名字「{name}」不合法。要求：小写字母开头，只含字母/数字/下划线，例如 structure3d")
         return 1
 
     feat_dir = FEATURES / name
     if feat_dir.exists():
-        print(f"✗ 模块「{name}」已存在：{feat_dir}")
+        print(f"× 模块「{name}」已存在：{feat_dir}")
         return 1
 
     types = args.artifact or [name]
     owner = used_types()
     clash = [t for t in types if t in owner]
     if clash:
-        print(f"✗ artifactType {clash} 已被占用：")
+        print(f"× artifactType {clash} 已被占用：")
         for t in clash:
             print(f"    {t} → 模块 {owner[t]}")
         print("  换个名字，或先删掉冲突的模块。")
@@ -230,7 +238,7 @@ def cmd_new(args) -> int:
         COMPONENT_TPL.format(name=name, title=args.title), encoding="utf-8")
     (feat_dir / "preview.ts").write_text(
         PREVIEW_TPL.format(title=args.title), encoding="utf-8")
-    print(f"  ✓ frontend/src/features/{name}/  (index.ts + Component.tsx + preview.ts)")
+    print(f"  √ frontend/src/features/{name}/  (index.ts + Component.tsx + preview.ts)")
 
     # 后端（可选）
     if args.tool:
@@ -242,7 +250,7 @@ def cmd_new(args) -> int:
             (tool_dir / "__init__.py").write_text(
                 TOOL_TPL.format(title=args.title, tool=args.tool, artifact=types[0]),
                 encoding="utf-8")
-            print(f"  ✓ backend/app/tools/{args.tool}/__init__.py")
+            print(f"  √ backend/app/tools/{args.tool}/__init__.py")
 
     print()
     print("接下来：")
@@ -283,7 +291,7 @@ def cmd_rm(args) -> int:
     name = args.name
     feat_dir = FEATURES / name
     if not feat_dir.exists():
-        print(f"✗ 没有模块「{name}」")
+        print(f"× 没有模块「{name}」")
         return 1
 
     # 删之前先把要连带删掉的东西查清楚
@@ -314,11 +322,11 @@ def cmd_rm(args) -> int:
         return 1
 
     shutil.rmtree(feat_dir)
-    print(f"  ✓ 已删除 frontend/src/features/{name}/")
+    print(f"  √ 已删除 frontend/src/features/{name}/")
 
     if tool:
         shutil.rmtree(TOOLS / tool)
-        print(f"  ✓ 已删除 backend/app/tools/{tool}/")
+        print(f"  √ 已删除 backend/app/tools/{tool}/")
     else:
         print(f"  ! 没找到配套的后端工具。如果确实有，请手工删 backend/app/tools/ 下对应目录")
 
