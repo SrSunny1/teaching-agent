@@ -330,3 +330,17 @@ cd frontend && rm -rf node_modules package-lock.json && npm install
 
 **5. 老式 `.doc` 是 OLE 二进制**，`ingest.py` 用 UTF-16LE 抽取兜底，能用但不如 `.docx` 干净。
 正式入库前建议用 Word 转成 `.docx`。
+
+**6. `setup.ps1` / `start.ps1` 必须以「UTF-8 with BOM」保存**
+
+双击 `setup.bat` 报「表达式或语句中包含意外的标记」就是这个原因。
+Windows PowerShell 5.1 在**没有 BOM** 时按 GBK 解码 `.ps1`，中文注释变乱码，
+乱码字节里出现引号/花括号 → 语法被撑破。
+
+**改了这两个文件之后**（用 VS Code 看右下角，编码必须是 `UTF-8 with BOM`），跑一下自查：
+
+```powershell
+powershell.exe -Command "$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('setup.ps1',[ref]$null,[ref]$e);$e"
+```
+
+没有任何输出 = 语法正常。`.bat` 文件则相反：**必须是纯 ASCII**（cmd.exe 不认 BOM）。

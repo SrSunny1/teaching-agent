@@ -1,4 +1,13 @@
-﻿# 材料物理实验教学 Agent · Windows 装环境
+﻿# ⚠️ 本文件必须以「UTF-8 with BOM」保存！
+#
+# 否则 Windows PowerShell 5.1 会按 GBK 解码，中文注释变成乱码，
+# 乱码字节里会出现引号/花括号 → 语法报错「表达式或语句中包含意外的标记」。
+# 用 VS Code 时看右下角编码，必须是「UTF-8 with BOM」，不是「UTF-8」。
+#
+# 改完自查：
+#   powershell.exe -Command "$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('setup.ps1',[ref]$null,[ref]$e);$e"
+
+# 材料物理实验教学 Agent · Windows 装环境
 # 在项目根目录跑：  .\setup.ps1
 # 每台机器跑一次即可。
 #
