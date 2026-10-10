@@ -36,6 +36,15 @@ export function featureByArtifact(type: ArtifactType): FeatureModule | undefined
   return byArtifact.get(type)
 }
 
+/** 当前所有被认领的 artifactType。给画布判断「这个类型有没有人管」用。 */
+export function knownArtifactTypes(): string[] {
+  return [...byArtifact.keys()].sort()
+}
+
+export function isRegisteredArtifact(type: string): boolean {
+  return byArtifact.has(type)
+}
+
 export function featureById(id: string): FeatureModule | undefined {
   return features.find((f) => f.id === id)
 }

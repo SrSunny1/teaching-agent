@@ -7,7 +7,9 @@ interface Props {
   onStop: () => void
 }
 
-const SLASH = ['/费曼追问', '/结构可视化', '/热处理沙盒', '/结晶条件', '/出题']
+// 快捷指令提示。★ 目前只是展示文案，还没接实际功能 —— 属于框架负责人的待办。
+// 改动这里时注意：只能出现 6 个模块里有的东西（"结晶条件" 那个模块已删除，别再写回来）。
+const SLASH = ['/费曼追问', '/结构可视化', '/热处理沙盒', '/图像诊断', '/出题']
 
 export default function Composer({ busy, onSend, onStop }: Props) {
   const [text, setText] = useState('')

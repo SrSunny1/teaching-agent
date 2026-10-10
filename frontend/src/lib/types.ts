@@ -37,16 +37,20 @@ export interface Message {
 /* ─────────────── Artifact 协议 ─────────────── */
 
 /**
- * 封闭集合 —— 与思维导图的 6 个模块一一对应，不多不少。
- * 新增一个类型 = 新增一个模块，需要全员确认后再动这里。
+ * ★ 开放的字符串类型，**故意不做成联合类型**。
+ *
+ * 原因：模块会换。如果这里写死 6 个名字，那每换一个模块都得改这个公共文件，
+ * 而它是 🟡「先问再改」级别 —— 等于每次换模块都要全员协调一次，太笨重。
+ *
+ * 现在模块是**自注册**的：新建 `features/<名>/index.ts` 并声明 `artifactTypes`，
+ * 就自动生效，**不用改任何公共文件**。
+ *
+ * 代价：拼写错误编译期查不出来。用两道运行时保障兜住：
+ *   1. `registry.ts` 发现重名会 warn
+ *   2. `ArtifactPanel` 收到没人认领的类型会显示「未实现」而不是白屏
+ *   3. `scripts/check-boundaries.py` 静态检查重名
  */
-export type ArtifactType =
-  | 'knowledge' // 知识库 · 术语库问答
-  | 'structure3d' // 材料结构 3D 可视化
-  | 'feynman' // 费曼追问
-  | 'graph' // 知识图谱 · 问题图谱
-  | 'micrograph' // 图像诊断
-  | 'heatTreatment' // 热处理工艺沙盒
+export type ArtifactType = string
 
 export interface Artifact {
   artifactType: ArtifactType

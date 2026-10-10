@@ -46,7 +46,11 @@ export default {
 后端工具写在 `backend/app/tools/<名>/__init__.py`，导出 `TOOL`，
 `name` 必须等于文件夹名。返回 `ToolResult(..., artifact_type="xxx", artifact={...})` 就能挂到画布。
 
-**artifactType 是封闭集合**，只能是这 6 个，不许新增：
+**artifactType 是开放的自定义字符串**，每个模块自己定，全局唯一即可。
+`ArtifactType` 类型就是 `string`，**故意不做成联合类型** —— 因为模块会换，
+写死名字会导致每换一个模块都要改 `types.ts` 这个共享文件。
+
+当前已有的（`python scripts/module.py list` 可随时查）：
 
 | artifactType | 模块 | 数据形状 |
 |---|---|---|
@@ -57,7 +61,21 @@ export default {
 | `micrograph` | 图像诊断 | `{imageUrl, isMicrograph, confidence, defects:[{type,cause,fix,textbookStep}], summary}` |
 | `heatTreatment` | 热处理工艺沙盒 | `{cooling, temperTemp, carbon, structure, hardnessHrc, curve:[[t,h]], diagnosis, warning}` |
 
-封闭集合（不要乱加值）：`relation` = 前置依赖/因果/对比/组成；`type` = 成分/相/组织/性能/工艺/缺陷。
+拼写错误有运行时兜底：重名会 warn，没人认领的类型画布会显示「没有功能认领」而不是白屏。
+
+**封闭集合（这几个不要乱加值）**：`relation` = 前置依赖/因果/对比/组成；
+`type`（图谱节点）= 成分/相/组织/性能/工艺/缺陷；`section`（知识库）= 见 `README.md` 契约表。
+
+## 加/删模块用脚手架，不要手搓
+
+```bash
+python scripts/module.py list                       # 现有模块
+python scripts/module.py new <名> --title "显示名" --artifact <类型> [--tool <工具名>]
+python scripts/module.py rm <名>                    # 连前后端一起删
+```
+
+**不需要改任何公共文件** —— 前端 `import.meta.glob`、后端 `pkgutil` 都是扫描目录的。
+手搓容易漏（比如工具名和模块名不一致时，删模块会漏删后端工具）。
 
 ## 数值必须有教材依据
 

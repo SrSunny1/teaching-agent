@@ -1,4 +1,5 @@
 import type { Artifact, ArtifactType, FeatureModule } from '../lib/types'
+import { isRegisteredArtifact, knownArtifactTypes } from '../lib/registry'
 import { IconPanel } from './icons'
 
 interface Props {
@@ -49,6 +50,17 @@ export default function ArtifactPanel({
             onSendMessage={onSendMessage}
             onEmitArtifact={onEmitArtifact}
           />
+        ) : artifact && !isRegisteredArtifact(artifact.artifactType) ? (
+          // 后端推来了一个没人认领的类型 —— 通常是模块刚被删掉/改名，而后端还在发。
+          // 这里明确报出来，比白屏强：模块换来换去的时候这条提示很有用。
+          <div className="artifact-empty">
+            <div style={{ color: 'var(--warn)', marginBottom: 6 }}>
+              没有功能认领 artifactType「{artifact.artifactType}」
+            </div>
+            <div style={{ fontSize: 'var(--fs-xs)' }}>
+              当前已认领的类型：{knownArtifactTypes().join('、') || '（无）'}
+            </div>
+          </div>
         ) : (
           <div className="artifact-empty">
             <div style={{ opacity: 0.5, marginBottom: 4 }}>
