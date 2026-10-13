@@ -212,10 +212,10 @@ python backend/tests/test_smoke.py        # 改了数值模型或 chat.py 后必
 **热处理工艺沙盒**是全项目的样板（本地交互、内联 SVG 绘图、参考数值模型，
 注释里写了「组件该怎么写」的四条约定）。做新模块前先读它。
 
-它现在在 **`_backup-旧模块/heatTreatment/`**（2026-10-11 重构成 module1~8 之前的版本）：
+它现在在 **`frontend/src/reference/heatTreatment/`**（2026-10-11 重构成 module1~8 之前的版本）：
 
 ```bash
-ls _backup-旧模块/heatTreatment/     # Component.tsx / model.ts / preview.ts / index.ts
+ls frontend/src/reference/heatTreatment/     # Component.tsx / model.ts / preview.ts / index.ts
 ```
 
 **它不会出现在左栏**（不在 `frontend/src/features/` 下），只是拿来抄结构用的。

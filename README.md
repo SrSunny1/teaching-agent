@@ -143,7 +143,7 @@ cd backend && python tests/retrieval_probe.py
 > `CODEOWNERS` 里的 `@A` `@B` 还是代号，**定了真实 GitHub 用户名后要替换**，否则 PR 会自动找错人。
 > `@C`、`@D` 暂无模块（原模块 5、6 已删除）。
 
-> **参考实现**：热处理工艺沙盒在 `_backup-旧模块/heatTreatment/`（重构前的版本），
+> **参考实现**：热处理工艺沙盒在 `frontend/src/reference/heatTreatment/`（重构前的版本），
 > 是全项目的组件样板 —— 抄它的结构，但不需要恢复它。
 
 ---
@@ -274,7 +274,7 @@ python scripts/module.py new <名> --title "显示名" --artifact <类型> [--to
    4. 要把新状态推回画布时调 props.onEmitArtifact('你的类型', {...})
 ```
 
-**`_backup-旧模块/heatTreatment/` 是全项目的样板**（本地交互 + 内联 SVG 绘图 + 数值模型 + 注释），
+**`frontend/src/reference/heatTreatment/` 是全项目的样板**（本地交互 + 内联 SVG 绘图 + 数值模型 + 注释），
 动手前先读它。样式优先用 `tokens.css` 里已有的类（`.feat` / `.kv` / `.box` / `.chip`），
 要自定义就在组件里写内联样式，**不要改 `tokens.css`**（那是框架负责人的文件）。
 
@@ -303,7 +303,7 @@ JSON 字段一律 camelCase。
 <现在有什么、缺什么。例如：
 - 前端 Component.tsx 是脚手架占位，只把 JSON 打印出来
 - 后端工具已能产出 artifact，但 xxx 字段恒为空
-- 参考实现在 `_backup-旧模块/heatTreatment/`>
+- 参考实现在 `frontend/src/reference/heatTreatment/`>
 
 【要做的】
 1. <具体步骤，带文件路径>
