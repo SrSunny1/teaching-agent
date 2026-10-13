@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from . import config
 from .chat import run_chat
@@ -27,9 +27,25 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class FeatureContext(BaseModel):
+    """当前对话所属的功能模块（左栏那 6 个模块之一）。
+
+    ★ 字段名叫 feature 不叫 module —— backend/app/tools/aggregate_safety_rules
+      里已经有一个 `module` 参数，指的是「劳育模块」（《任务书》模块一~四），
+      跟这里说的前端功能模块是完全不同的概念，别混。
+
+    长度上限是防呆：persona 会被拼进系统提示词，不能让一个人写两千字把提示词撑爆。
+    """
+
+    id: str = Field(default="", max_length=64)
+    title: str = Field(default="", max_length=64)
+    persona: str = Field(default="", max_length=200)
+
+
 class ChatRequest(BaseModel):
     session_id: str = "local"
     messages: list[ChatMessage]
+    feature: FeatureContext | None = None
 
 
 @app.get("/")
@@ -68,9 +84,10 @@ async def health() -> dict:
 @app.post("/chat")
 async def chat(req: ChatRequest) -> StreamingResponse:
     history = [m.model_dump() for m in req.messages]
+    feature = req.feature.model_dump() if req.feature else None
 
     async def gen():
-        async for event in run_chat(history):
+        async for event in run_chat(history, feature=feature):
             yield encode(event)
         yield "data: [DONE]\n\n"
 

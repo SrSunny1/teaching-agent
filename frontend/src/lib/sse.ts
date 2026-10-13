@@ -10,9 +10,24 @@ import type { Message, SSEEvent } from './types'
 
 const ENDPOINT = '/api/chat'
 
+/**
+ * 当前对话所属的功能模块。全局对话不传。
+ *
+ * ★ 字段名是 feature 不是 module —— 后端 `aggregate_safety_rules` 工具里已有一个
+ *   `module` 参数，指的是「劳育模块」，两者是完全不同的概念。
+ */
+export interface FeatureContext {
+  id: string
+  title: string
+  /** 模块职责说明，见 types.ts 的 FeatureModule.persona */
+  persona?: string
+}
+
 export interface StreamOptions {
   sessionId: string
   messages: Message[]
+  /** 当前对话所属的功能模块。后端据此把模块身份拼进系统提示词 */
+  feature?: FeatureContext
   onEvent: (e: SSEEvent) => void
   signal?: AbortSignal
 }
@@ -38,6 +53,7 @@ export async function streamChat(opts: StreamOptions): Promise<void> {
     body: JSON.stringify({
       session_id: opts.sessionId,
       messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
+      feature: opts.feature ?? null,
     }),
     signal: opts.signal,
   })

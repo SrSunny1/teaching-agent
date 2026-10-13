@@ -12,6 +12,7 @@
 | 后端工具 | `backend/app/tools/load_structure/` |
 | 左栏顺序 | 70 |
 | 负责人 | **SrSunny1**（框架负责人兼） |
+| 模块身份 `persona` | **已填**（见 `index.ts`）—— Agent 在本模块里会以晶体结构可视化子智能体的身份作答 |
 
 ---
 

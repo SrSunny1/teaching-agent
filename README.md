@@ -53,11 +53,15 @@ start.bat
 
 ```bash
 # 终端 1 —— 后端
-cd backend && uvicorn app.main:app --reload --port 8000
+cd backend && WATCHFILES_FORCE_POLLING=true uvicorn app.main:app --reload --port 8000
 
 # 终端 2 —— 前端
 cd frontend && npm run dev
 ```
+
+> `WATCHFILES_FORCE_POLLING=true` 是**项目在 WSL 挂载盘（`/mnt/...`）上时必须的** ——
+> 不加的话 `--reload` 会静默失效，改了 `chat.py` / 工具一点反应都没有。
+> 项目在 Windows 原生盘或 WSL 的 Linux 侧时可以省掉。详见第五节第 7 条。
 
 ### 只想看自己的模块效果？
 
@@ -68,7 +72,12 @@ cd frontend && npm run dev
 ```
 
 点左栏模块 → 进这个模块**自己的对话** → 画布默认是空的（可视化由对话触发）。
-想看模块自带的样例数据，画布空态里点「查看样例数据」。
+
+> ⚠️ **右栏画布默认是收起的** —— 一进来只有两栏（左栏 + 对话）。
+> 它只在两种情况下出现：① 该模块在 `index.ts` 里声明了 `autoOpenCanvas`（展示型模块，
+> 比如 3D 可视化），点进去就展开；② 对话里 Agent 产出了 artifact，且产出的模块声明了它。
+> **其他情况想看画布，点顶栏右侧的画布按钮。**
+> 想看模块自带的样例数据：先展开画布，再在空态里点「查看样例数据」。
 
 ### ★ 界面在哪个端口？看 Vite 启动时打印的那行
 
@@ -151,6 +160,34 @@ cd backend && python tests/retrieval_probe.py
 
 ## 三、契约（Agent ↔ 壳 的唯一接口）
 
+> ⚠️ **改这一节的任何东西都要在群里说一声**（它和 `lib/types.ts`、`backend/app/events.py` 三处同步）。
+
+### 请求体（`POST /chat`）
+
+```json
+{
+  "session_id": "local",
+  "messages": [{ "role": "user", "content": "…" }],
+  "feature": { "id": "feynman", "title": "费曼追问", "persona": "…" }
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `session_id` | 预留的会话标识。**后端目前不使用** —— 上下文完全由 `messages` 携带 |
+| `messages` | 完整对话历史，`role` 只有 `user` / `assistant` |
+| `feature` | **当前对话属于哪个功能模块**（左栏那些模块之一）；全局对话传 `null` |
+
+`feature` 是壳从 `features/<名>/index.ts` 带上来的，后端把它拼进系统提示词。
+**这是 Agent 知道自己「在哪个模块、负责什么」的唯一途径** —— 不传的话，
+学生在「费曼追问」里问「你负责什么」，Agent 只会笼统答「我是教学智能体」。
+
+`persona` 不写也能用：Agent 仍知道自己「正在【title】模块中对话」，只是说不出职责。
+写法约束见 `lib/types.ts` 里 `FeatureModule.persona` 的注释。
+
+> ⚠️ 这里的 `feature` 指**前端功能模块**，与 `aggregate_safety_rules` 工具里那个
+> 「劳育模块」`module` 参数完全是两回事，别混。
+
 ### Artifact 协议
 
 后端通过 SSE 推 `{artifactType, data}`，壳查表找到注册该类型的组件，把 `data` 原样丢给它渲染。
@@ -227,7 +264,7 @@ TOOL = Tool(
 
 | 文件 | 作用 | 必须吗 |
 |---|---|---|
-| `frontend/src/features/<名>/index.ts` | 注册：id / 标题 / artifactType / 排序 / preview | ✅ |
+| `frontend/src/features/<名>/index.ts` | 注册：id / 标题 / artifactType / 排序 / preview（可选：`persona` 模块身份、`autoOpenCanvas` 是否自动展开画布） | ✅ |
 | `frontend/src/features/<名>/Component.tsx` | 画布渲染组件 | ✅ |
 | `frontend/src/features/<名>/preview.ts` | 样例数据 —— 让你不用后端就能看到效果 | ✅ |
 | `backend/app/tools/<工具名>/__init__.py` | 后端工具，导出 `TOOL` | 需要后端计算时 |
@@ -299,6 +336,11 @@ JSON 字段一律 camelCase。
 <把你的数据 JSON 形状写出来，例如：
 {a: string, b: [{c: number, d: string}], warning: string|null}
 字段尽量具体，agent 不知道形状就只能瞎猜。>
+
+【模块身份】在 index.ts 里填 persona
+<一句话：这个模块在教学上负责什么。会随请求发给后端、拼进系统提示词，
+ 让 Agent 知道自己在哪个模块 —— 不填的话，学生问「你负责什么」它只会答「我是教学智能体」。
+ 只写职责/范围，别写「你有什么能力」（知识边界由后端 SYSTEM_PROMPT 统一授予）。单行 ≤100 字。>
 
 【当前状态】
 <现在有什么、缺什么。例如：
@@ -372,3 +414,33 @@ powershell.exe -Command "$e=$null;[System.Management.Automation.Language.Parser]
 ```
 
 没有任何输出 = 语法正常。`.bat` 文件则相反：**必须是纯 ASCII**（cmd.exe 不认 BOM）。
+
+**7. ★ 在 WSL 挂载盘（`/mnt/...`）上，前后端的热更新都不工作**
+
+DrvFs 不支持 inotify，所以文件监听的**事件根本不会触发** —— 而且**不报错**：
+
+- **前端**：Vite 的 HMR 完全不响应。更坑的是**连浏览器硬刷新都救不回来** ——
+  Vite 自己认为文件没变，会一直吐改动前的编译结果。
+- **后端**：`uvicorn --reload` 静默失效，改了 `chat.py` / 工具不会有任何反应。
+
+**症状极具误导性**：源码明明改了、`tsc -b` / `check-boundaries.py` 也全过，界面就是没变化 ——
+很容易一路去怀疑代码，其实是进程在跑旧版本。
+
+**怎么确认**（问服务本身要代码，别盯着源码文件看）：
+
+```bash
+# 前端：Vite 现在真正发出去的是什么？（把它换成你刚加的标识符）
+curl -s "http://localhost:5173/src/lib/sse.ts" | grep <你刚加的标识符>
+
+# 后端：正在跑的进程认不认识你新加的字段？
+curl -s http://127.0.0.1:8000/openapi.json | grep <你新加的字段>
+```
+
+**已经做的缓解**（不用你手动处理）：
+
+- `frontend/vite.config.ts` 里开了 `server.watch.usePolling`，前端 HMR 恢复；
+- `start.ps1` 里设了 `WATCHFILES_FORCE_POLLING`，后端的 `--reload` 恢复。
+
+**但如果你是自己手敲命令起的服务，就得自己带上那个环境变量**（见第一节）。
+最彻底的解法仍是**把项目放到 WSL 的 Linux 侧（`~/` 下）** —— 这个坑连同上面第 1 条的
+`npm install` 问题会一起消失，代价是 Windows 侧不再直接可见。

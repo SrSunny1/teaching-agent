@@ -3,12 +3,13 @@
 
     cd backend && python tests/test_smoke.py
 
-覆盖三件最容易悄悄坏掉的事：
+覆盖四件最容易悄悄坏掉的事：
   1. 热处理模型的数值是否还落在教材区间内（改曲线时最容易改坏）
   2. Agent 工具调用循环能否正确拼接流式分片、回灌结果、产出 artifact
   3. 工具/功能的自动注册是否还在工作（有人手滑改了目录结构就会断）
+  4. 模块身份有没有正确拼进系统提示词（拼接一改，全局对话的提示词就可能被带偏）
 
-★ 改动 simulate_heat_treatment 的 TEMPER_CURVE，或改动 chat.py 的流式解析后，必须重跑。
+★ 改动 simulate_heat_treatment 的 TEMPER_CURVE，或改动 chat.py 的流式解析 / _system_prompt 后，必须重跑。
 """
 # ─────────────────────────────────────────────────────────────
 # ★ 控制台输出只用 GBK 能编码的符号：√（通过）和 ×（失败）。
@@ -229,6 +230,39 @@ def test_auto_registration() -> None:
         check(not no_index, f"前端 {len(dirs)} 个功能目录都有 index.ts", f"缺失：{no_index}" if no_index else "")
 
 
+def test_module_identity() -> None:
+    """chat._system_prompt：把「当前在哪个功能模块」拼进系统提示词。
+
+    ★ 第一条断言是**回归保护**：全局对话的提示词必须与加这个功能之前逐字一致。
+      它靠 `_system_prompt` 在 feature 为空时提前 `return config.SYSTEM_PROMPT` 来保证，
+      所以这里断言字符串相等（而不是"看着差不多"）—— 有人把它改成拼空串就会报红。
+    """
+    print("\n[4] 模块身份拼进系统提示词")
+    import app.chat as chat
+
+    # 全局对话：一条都不该多
+    check(
+        chat._system_prompt(None) == config.SYSTEM_PROMPT,
+        "全局对话（无模块）的提示词与改动前逐字一致",
+    )
+
+    # 只给了 title（模块 1~4 还没写 persona 时的样子）：知道自己在哪，但别编职责
+    only_title = chat._system_prompt({"id": "module1", "title": "模块1", "persona": ""})
+    check(
+        config.SYSTEM_PROMPT in only_title and "模块1" in only_title,
+        "只有 title 时：拼进模块名，同时保留全局提示词",
+    )
+
+    # title + persona：模块名与职责都要出现
+    full = chat._system_prompt(
+        {"id": "feynman", "title": "费曼追问", "persona": "逼学生把概念讲清楚。"}
+    )
+    check(
+        config.SYSTEM_PROMPT in full and "费曼追问" in full and "逼学生把概念讲清楚。" in full,
+        "有 persona 时：模块名与职责都进了提示词",
+    )
+
+
 def main() -> int:
     print("=" * 62)
     print("材料物理实验教学 Agent · 冒烟测试")
@@ -236,6 +270,7 @@ def main() -> int:
     test_heat_treatment_bands()
     test_agent_loop()
     test_auto_registration()
+    test_module_identity()
 
     print("\n" + "=" * 62)
     if FAILURES:

@@ -71,7 +71,14 @@ export default function App() {
 
   const [artifact, setArtifact] = useState<Artifact | null>(null)
   const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null)
-  const [panelOpen, setPanelOpen] = useState(true)
+  /**
+   * 右栏画布是否展开。
+   *
+   * ★ 默认**收起**：一进来是两栏（对话 + 左栏），画布只在真正需要时才出现 ——
+   *   即模块声明了 autoOpenCanvas 并产出了 artifact（见下面 artifact 分支）。
+   *   默认展开的话，每个只想问问题的学生都白白被占掉一块屏幕。
+   */
+  const [panelOpen, setPanelOpen] = useState(false)
   /** 画布全屏：对话栏收起，画布占满主区。是「视图模式」不是布局重构 */
   const [canvasFull, setCanvasFull] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -149,6 +156,18 @@ export default function App() {
       if (!q || busy) return
 
       const convKey = convKeyRef.current
+
+      /*
+       * ★ 模块身份取「对话 key」，不是「画布当前显示哪个模块」—— 这两者会分叉：
+       *   在全局对话里触发了某个模块的 artifact 时（见下面 artifact 分支），画布切过去了、
+       *   对话仍然是 __global__。那种情况下问「你负责什么」应当答通用身份，所以以对话为准。
+       *   （这是有意为之的取舍，不是 bug —— 别改成 activeFeatureId。）
+       */
+      const mod = featureById(convKey)
+      const featureCtx = mod
+        ? { id: mod.id, title: mod.title, persona: mod.persona }
+        : undefined
+
       const userId = uid()
       const asstId = uid()
       const history: Message[] = [
@@ -169,8 +188,14 @@ export default function App() {
         if (e.type === 'artifact') {
           setArtifact({ artifactType: e.artifactType, data: e.data })
           const owner = featureByArtifact(e.artifactType)
-          if (owner) setActiveFeatureId(owner.id)
-          setPanelOpen(true)
+          if (owner) {
+            setActiveFeatureId(owner.id)
+            // ★ 只有模块自己声明了 autoOpenCanvas 才抢屏（见 lib/types.ts）。
+            //   展示型模块（3D 晶体这类）弹出来是「你要看的东西来了」；
+            //   对话型模块（费曼追问这类）弹出来只是从问答区抢走一块屏幕。
+            //   壳不认具体模块名 —— 判据由模块在自己的 index.ts 里声明。
+            if (owner.autoOpenCanvas) setPanelOpen(true)
+          }
           return
         }
         if (e.type === 'done') {
@@ -193,7 +218,13 @@ export default function App() {
         if (connection === 'mock') {
           await streamMock(q, onEvent, ctrl.signal)
         } else {
-          await streamChat({ sessionId: 'local', messages: history, onEvent, signal: ctrl.signal })
+          await streamChat({
+            sessionId: 'local',
+            messages: history,
+            feature: featureCtx,
+            onEvent,
+            signal: ctrl.signal,
+          })
         }
       } catch (err) {
         if (!ctrl.signal.aborted) {
@@ -230,7 +261,11 @@ export default function App() {
       setActiveFeatureId(null)
       setActiveConvKey(GLOBAL_CONV)
     }
-    setPanelOpen(true)
+    // ★ 画布跟着模块走：只有声明了 autoOpenCanvas 的展示型模块，点进去才展开（见 lib/types.ts）。
+    //   对话型模块（费曼追问这类）点进去就是纯对话；想看画布再点顶栏的按钮。
+    //   ⚠️ 代价：没声明 autoOpenCanvas 的模块，作者看自己的 preview 要多点一下顶栏按钮 ——
+    //     这一点已写进 README 第一节 / 协作流程 六①。
+    setPanelOpen(Boolean(f?.autoOpenCanvas))
     // 换模块时清掉画布，让新模块的对话自己产出
     setArtifact(null)
   }, [])

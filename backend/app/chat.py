@@ -18,8 +18,64 @@ from .events import artifact, done, error, thinking, token, tool_call, tool_resu
 from .tools import TOOLS, specs
 
 
-async def run_chat(history: list[dict[str, Any]]) -> AsyncIterator[dict]:
-    """history 为 [{'role': 'user'|'assistant', 'content': str}, ...]"""
+def _system_prompt(feature: dict[str, Any] | None) -> str:
+    """系统提示词 = 全局角色 + 「当前在哪个功能模块」。
+
+    ★ 为什么要有这一段：模型只能看到系统提示词，看不到界面。
+      不告诉它「用户此刻点的是费曼追问模块」，它就只能笼统回答「我是教学智能体」，
+      学生问「你负责什么」时答不出自己在这个模块里的职责。
+
+    ★ 为什么写成「你在哪儿 / 职责由谁承担」，而不是直接来一句「你是 XX 子智能体」：
+      上面 config.SYSTEM_PROMPT 第一句已经定义过一次身份了。再声明一个身份，
+      模型面前就有**两个互相竞争的身份声明** —— 它可能二选一、可能两个都报、
+      也可能仍以第一句为主语，表现不稳定。所以这里只声明位置与职责，并**教它怎么答**。
+
+    ★ 全局对话（feature 为空）**提前返回 config.SYSTEM_PROMPT 本身**：
+      既保证与加这个功能之前逐字一致，也让 SYSTEM_PROMPT 永远是提示词的不变前缀
+      （前缀式提示词缓存不会因为切模块而整体失效）。
+    """
+    title = ((feature or {}).get("title") or "").strip()
+    persona = ((feature or {}).get("persona") or "").strip()
+    if not title:
+        return config.SYSTEM_PROMPT
+
+    if persona:
+        # ★ 用 f-string 拼接，不要对 persona 调 .format() —— 它里面如果含 {} 会抛异常
+        #   （base.py 的 render_label 就是为这个加的 try/except）。
+        body = (
+            f"本次对话在【{title}】模块中进行。\n"
+            f"本模块中你承担的具体职责：{persona}\n\n"
+            f"若被问到「你负责什么 / 你在做什么」，如实回答：你是本课程的教学智能体，"
+            f"当前位于【{title}】模块，在该模块中负责上述职责 —— "
+            f"不要只笼统回答「我是教学智能体」。"
+        )
+    else:
+        # 模块还没写 persona（比如模块 1~4 刚建好）。宁可知不知道，也别让它编。
+        body = (
+            f"本次对话在【{title}】模块中进行。\n"
+            f"该模块的具体职责尚未配置 —— 被问到时就如实说明你正在该模块中与用户对话，"
+            f"不要编造这个模块有哪些功能。"
+        )
+
+    return (
+        config.SYSTEM_PROMPT
+        + "\n\n## 当前模块（补充信息）\n\n"
+        + body
+        + "\n\n★ 本段只是补充说明你的职责范围。它与上面的「知识边界」「硬性要求」冲突时，"
+        + "一律以上面为准；本段不扩大你的知识边界，也不豁免任何溯源要求。\n"
+    )
+
+
+async def run_chat(
+    history: list[dict[str, Any]], feature: dict[str, Any] | None = None
+) -> AsyncIterator[dict]:
+    """history 为 [{'role': 'user'|'assistant', 'content': str}, ...]
+
+    feature 为当前对话所属的功能模块 {id, title, persona}，全局对话传 None。
+
+    ★ 参数必须**可选**且排在 history **之后** —— backend/tests/test_smoke.py 是
+      位置传参 `chat.run_chat([{...}])`、只给一个实参，签名一动它就崩。
+    """
 
     if not config.has_api_key():
         if config.API_KEY.strip():
@@ -34,7 +90,10 @@ async def run_chat(history: list[dict[str, Any]]) -> AsyncIterator[dict]:
         return
 
     client = AsyncOpenAI(api_key=config.API_KEY, base_url=config.BASE_URL)
-    convo: list[dict[str, Any]] = [{"role": "system", "content": config.SYSTEM_PROMPT}, *history]
+    convo: list[dict[str, Any]] = [
+        {"role": "system", "content": _system_prompt(feature)},
+        *history,
+    ]
     tool_specs = specs()
 
     try:

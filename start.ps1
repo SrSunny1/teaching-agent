@@ -20,6 +20,12 @@ if (-not (Test-Path $VenvPy)) {
     exit 1
 }
 
+# ★ 让 uvicorn 的 --reload 在 WSL 挂载盘（/mnt/... 这类 DrvFs）上也能工作：
+#   watchfiles 默认靠 inotify，而 DrvFs 不支持，结果是「永远不重载」，
+#   改了 chat.py / tools 一点反应都没有，还不报错。强制轮询。
+#   项目在 Windows 原生盘或 WSL 的 Linux 侧时这行是多余的（多一点开销），但无害。
+$env:WATCHFILES_FORCE_POLLING = "true"
+
 # 后端：新开一个窗口
 Write-Host "  [OK] 启动后端（新窗口）  http://localhost:8000" -ForegroundColor Green
 Start-Process -FilePath "powershell" -ArgumentList @(

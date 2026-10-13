@@ -63,12 +63,29 @@
 export default {
   id: '<名>',                       // 必须等于文件夹名
   title: '模块名',
+  persona: '这个模块在教学上负责什么',  // 可选，见下
   artifactTypes: ['<artifactType>'], // 全局唯一
   order: 10,                        // 左栏排序
   preview,                          // 样例数据，在 preview.ts
+  autoOpenCanvas: false,             // 可选：展示型模块设 true，见下
   Component,
 } satisfies FeatureModule
 ```
+
+**`autoOpenCanvas`（可选，默认 false）—— 产出 artifact 时要不要自动展开右栏画布。**
+
+判据只有一条：**这个模块的交付物是不是那块画布本身？**
+展示型（3D、图谱、图表、动画）设 `true`；对话型（追问、讲解、批改）**别设** ——
+内容都在对话流里，画布弹出只是从问答区抢屏幕。
+
+**`persona`（可选）—— 让 Agent 知道自己是谁。** 它会随每次请求发给后端、拼进系统提示词。
+不填的话，学生在你的模块里问「你负责什么」，Agent 只会笼统答「我是教学智能体」。
+
+- 只写**职责 / 范围**，不要写「你有什么能力、什么权限」——知识边界、溯源要求、
+  必须调工具这些由 `backend/app/config.py` 的 `SYSTEM_PROMPT` 统一授予，写在 persona 里
+  既不生效、还会和它打架。
+- 单行、≤100 字；**不要写字段名**（`id`、`artifactTypes` 这类）、**不要用英文撇号** ——
+  `scripts/module.py` 和 `check-boundaries.py` 都用正则扫 `index.ts` 且取最左匹配。
 
 后端工具写在 `backend/app/tools/<名>/__init__.py`，导出 `TOOL`，
 `name` 必须等于文件夹名。返回 `ToolResult(..., artifact_type="xxx", artifact={...})` 就能挂到画布。
@@ -205,7 +222,9 @@ python backend/tests/test_smoke.py        # 改了数值模型或 chat.py 后必
 
 点左栏模块 → 进这个模块**自己的对话** → 画布默认是空的（可视化由对话触发）。
 想看模块自带的样例数据，画布空态里点「查看样例数据」→ 右上角会标注「预览数据」。
-**这一步不需要后端、不需要 API Key**，改完代码浏览器自动刷新。
+**这一步不需要后端、不需要 API Key**，改完代码浏览器自动刷新
+（⚠️ 项目在 WSL 挂载盘 `/mnt/...` 上时这条**不成立** —— 前后端的热更新都会静默失效，
+见 `README.md` 第五节第 7 条。**看不到效果时先怀疑进程在跑旧版本，再怀疑代码**）。
 
 ## 参考实现
 
