@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, AsyncIterator
 
 from openai import AsyncOpenAI
@@ -64,6 +65,39 @@ def _system_prompt(feature: dict[str, Any] | None) -> str:
         + "\n\n★ 本段只是补充说明你的职责范围。它与上面的「知识边界」「硬性要求」冲突时，"
         + "一律以上面为准；本段不扩大你的知识边界，也不豁免任何溯源要求。\n"
     )
+
+
+def _requested_structure(history: list[dict[str, Any]]) -> str | None:
+    """从最新用户请求中提取明确指定的晶体结构，避免工具参数与请求不一致。"""
+    latest_user = next(
+        (str(message.get("content") or "") for message in reversed(history) if message.get("role") == "user"),
+        "",
+    )
+    if not latest_user:
+        return None
+
+    patterns = {
+        "sc": ("简单立方", r"(?<![a-z0-9])sc(?![a-z0-9])"),
+        "bcc": ("体心立方", r"(?<![a-z0-9])bcc(?![a-z0-9])"),
+        "fcc": ("面心立方", r"(?<![a-z0-9])fcc(?![a-z0-9])"),
+        "hcp": ("密排六方", "六方密排", r"(?<![a-z0-9])hcp(?![a-z0-9])"),
+    }
+
+    def mentions(text: str) -> set[str]:
+        return {
+            structure
+            for structure, aliases in patterns.items()
+            if any(re.search(alias, text, re.IGNORECASE) for alias in aliases)
+        }
+
+    # 对“我要 BCC，但画布显示 SC”这类纠错请求，采用转折前明确要求的目标。
+    requested_part = re.split(r"但|可是|然而|不过|却|而不是|instead of|rather than|\bbut\b", latest_user, maxsplit=1, flags=re.IGNORECASE)[0]
+    requested = mentions(requested_part)
+    if len(requested) == 1 and re.search(r"可视化|渲染|加载|展示|显示|模型|晶胞", requested_part):
+        return next(iter(requested))
+
+    all_mentions = mentions(latest_user)
+    return next(iter(all_mentions)) if len(all_mentions) == 1 else None
 
 
 async def run_chat(
@@ -145,6 +179,18 @@ async def run_chat(
                 break
 
             ordered = [calls[i] for i in sorted(calls)]
+
+            requested_structure = _requested_structure(history)
+            for slot in ordered:
+                if slot["name"] != "load_structure" or not requested_structure:
+                    continue
+                try:
+                    args = json.loads(slot["args"] or "{}")
+                except json.JSONDecodeError:
+                    args = {}
+                if isinstance(args, dict):
+                    args["structure"] = requested_structure
+                    slot["args"] = json.dumps(args, ensure_ascii=False)
 
             # 把 assistant 这一轮的 tool_calls 记进上下文，否则下一轮模型不知道发生过什么
             convo.append(

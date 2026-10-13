@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import type {
   Artifact,
   ConnectionState,
@@ -79,6 +80,9 @@ export default function App() {
    *   默认展开的话，每个只想问问题的学生都白白被占掉一块屏幕。
    */
   const [panelOpen, setPanelOpen] = useState(false)
+  const [panelWidth, setPanelWidth] = useState(580)
+  const [resizingPanel, setResizingPanel] = useState(false)
+  const [wideLayout, setWideLayout] = useState(() => window.matchMedia('(min-width: 1280px)').matches)
   /** 画布全屏：对话栏收起，画布占满主区。是「视图模式」不是布局重构 */
   const [canvasFull, setCanvasFull] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -114,6 +118,42 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1280px)')
+    const update = () => setWideLayout(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
+  const maxPanelWidth = useCallback(() => {
+    const root = document.querySelector<HTMLElement>('.shell')
+    if (!root) return 900
+    const sidebarWidth = Number.parseFloat(getComputedStyle(root).getPropertyValue('--sidebar-w')) || 236
+    return Math.max(360, Math.min(900, root.clientWidth - sidebarWidth - 360))
+  }, [])
+
+  const resizePanel = useCallback((clientX: number) => {
+    const root = document.querySelector<HTMLElement>('.shell')
+    if (!root) return
+    const maxWidth = maxPanelWidth()
+    const nextWidth = root.getBoundingClientRect().right - clientX
+    setPanelWidth(Math.round(Math.max(360, Math.min(maxWidth, nextWidth))))
+  }, [maxPanelWidth])
+
+  const handleResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault()
+      const change = event.key === 'ArrowRight' ? 24 : -24
+      setPanelWidth((width) => Math.max(360, Math.min(maxPanelWidth(), width + change)))
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      setPanelWidth(360)
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      setPanelWidth(maxPanelWidth())
+    }
+  }, [maxPanelWidth])
 
   /* ── Esc 退出画布全屏 ── */
   useEffect(() => {
@@ -296,6 +336,7 @@ export default function App() {
         ]
         .filter(Boolean)
         .join(' ')}
+      style={{ '--artifact-w': `${panelWidth}px`, position: 'relative' } as CSSProperties}
     >
       <Sidebar
         collapsed={!sidebarOpen}
@@ -351,6 +392,45 @@ export default function App() {
           canvasFull={canvasFull}
           onToggleFullscreen={() => setCanvasFull((v) => !v)}
         />
+      )}
+
+      {!pageMode && panelOpen && !canvasFull && wideLayout && (
+        <div
+          role="separator"
+          aria-label="调整可视化区域宽度"
+          aria-orientation="vertical"
+          aria-valuemin={360}
+          aria-valuemax={900}
+          aria-valuenow={panelWidth}
+          tabIndex={0}
+          title="拖动调整画布宽度；方向键微调；双击恢复默认宽度"
+          onPointerDown={(event) => {
+            event.currentTarget.setPointerCapture(event.pointerId)
+            setResizingPanel(true)
+          }}
+          onPointerMove={(event) => {
+            if (resizingPanel) resizePanel(event.clientX)
+          }}
+          onPointerUp={() => setResizingPanel(false)}
+          onPointerCancel={() => setResizingPanel(false)}
+          onKeyDown={handleResizeKeyDown}
+          onDoubleClick={() => setPanelWidth(580)}
+          style={{
+            position: 'absolute',
+            zIndex: 20,
+            top: 0,
+            bottom: 0,
+            right: `${panelWidth - 4}px`,
+            width: 8,
+            display: 'grid',
+            placeItems: 'center',
+            cursor: 'col-resize',
+            touchAction: 'none',
+            outline: 'none',
+          }}
+        >
+          <span style={{ width: resizingPanel ? 3 : 2, height: 44, borderRadius: 99, background: resizingPanel ? 'var(--accent)' : 'var(--border-strong)', boxShadow: resizingPanel ? '0 0 12px var(--accent-border)' : undefined, pointerEvents: 'none' }} />
+        </div>
       )}
     </div>
   )

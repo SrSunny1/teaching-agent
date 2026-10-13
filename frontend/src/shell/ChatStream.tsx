@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -67,9 +67,10 @@ function AssistantMessage({ m }: { m: Message }) {
 }
 
 export default function ChatStream({ messages }: { messages: Message[] }) {
-  const endRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
+  const lastUserMessageRef = useRef<string | undefined>(undefined)
+  const latestUserMessageId = [...messages].reverse().find((message) => message.role === 'user')?.id
 
   // 只在用户贴着底部时才自动滚动，避免打断向上翻阅
   const onScroll = () => {
@@ -78,9 +79,19 @@ export default function ChatStream({ messages }: { messages: Message[] }) {
     pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
   }
 
-  useEffect(() => {
-    if (pinnedRef.current) endRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages])
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const newUserMessage = Boolean(
+      latestUserMessageId && latestUserMessageId !== lastUserMessageRef.current,
+    )
+    if (latestUserMessageId) lastUserMessageRef.current = latestUserMessageId
+
+    // 每次发送新问题都从旧消息位置跳到最新位置；后续生成仍尊重用户手动上翻。
+    if (newUserMessage) pinnedRef.current = true
+    if (newUserMessage || pinnedRef.current) el.scrollTop = el.scrollHeight
+  }, [messages, latestUserMessageId])
 
   if (messages.length === 0) {
     return (
@@ -139,7 +150,6 @@ export default function ChatStream({ messages }: { messages: Message[] }) {
             <AssistantMessage key={m.id} m={m} />
           ),
         )}
-        <div ref={endRef} />
       </div>
     </div>
   )

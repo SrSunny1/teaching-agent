@@ -1,4 +1,4 @@
-// backend-tool: -
+// backend-tool: feynman_followup
 import type { FeatureModule } from '../../lib/types'
 import Component from './Component'
 import preview from './preview'
