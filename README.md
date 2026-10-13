@@ -141,7 +141,7 @@ cd backend && python tests/retrieval_probe.py
 > 用 `python scripts/module.py list` 随时核对当前状态。
 
 > ⚠️ **框架必须由一个人独占**（现在是 SrSunny1，同时兼做 visual3d / feynman）。
-> `CODEOWNERS` 里的 `@A` `@B` 还是代号，**定了真实 GitHub 用户名后要替换**，否则 PR 会自动找错人。
+> `CODEOWNERS` 里的 `@A` `@B` 还是代号 —— 它只在**开 PR 时**才会用到，我们基本不开 PR（直接推 main），所以不急。
 > `@C`、`@D` 暂无模块（原模块 5、6 已删除）。
 
 > **参考实现**：热处理工艺沙盒在 `frontend/src/reference/heatTreatment/`（重构前的版本），
