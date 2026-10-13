@@ -9,6 +9,33 @@
 知识边界是封闭的：《材料科学基础》实验教材 7 个实验 + 劳动教育四大模块，**越界的问题一律拒答**。
 界面是三栏 Agent 工作台（左栏模块导航 / 中栏对话流 / 右栏可视化画布）。
 
+## ★ 先读你的任务书
+
+**每个模块有一份自己的任务书**，在 `frontend/src/features/<模块名>/AGENTS.md`。
+它包含：这个模块要做什么、数据形状、当前进度、验收标准、怎么写。
+
+**动手前先读对应那份。** 确定自己负责哪个模块看仓库根目录的 `CODEOWNERS`：
+
+| 编号 | 模块名 | 任务书 | 负责人 |
+|---|---|---|---|
+| 1 | 模块 1（待定） | `frontend/src/features/module1/AGENTS.md` | A |
+| 2 | 模块 2（待定） | `frontend/src/features/module2/AGENTS.md` | A |
+| 3 | 模块 3（待定） | `frontend/src/features/module3/AGENTS.md` | B |
+| 4 | 模块 4（待定） | `frontend/src/features/module4/AGENTS.md` | B |
+| **7** | **3D 可视化** | `frontend/src/features/visual3d/AGENTS.md` | **SrSunny1** |
+| **8** | **费曼追问** | `frontend/src/features/feynman/AGENTS.md` | **SrSunny1** |
+
+> 📌 **visual3d / feynman 已定名**，**模块 1~4 仍是编号占位，名字待定。**
+> （原模块 5、6 已删除，负责人 C 暂无模块）
+> 名字定了之后，改三处：各任务书的「模块名」行、`CODEOWNERS` 的路径、本表。
+> 用 `python scripts/module.py list` 随时核对当前状态。
+
+> ⚠️ **`CODEOWNERS` 是给 GitHub 用的**（决定谁的 PR 该找谁 review），
+> **编码 agent 不读它**。任务看上面这张表，归属看 `CODEOWNERS`，两者不是一回事。
+>
+> 如果你在仓库根目录运行，本文件是自动注入的；模块任务书需要你主动去读
+> （或者 `cd` 进那个模块目录再启动，那样它也会自动注入）。
+
 ## ★ 铁律：三道线
 
 这是最重要的规则。**默认假设你只被授权改 🟢 那一层。**
@@ -54,17 +81,80 @@ export default {
 
 | artifactType | 模块 | 数据形状 |
 |---|---|---|
-| `knowledge` | 知识库 · 术语库问答 | `{query, chunks:[{source,experiment,section,text}], terms:[{zh,en,definition,refs}]}` |
-| `structure3d` | 材料结构 3D 可视化 | `{structure, feature, atoms:[{x,y,z}], bonds:[[i,j]], sites, cell, stacking, params}` |
+| `module1` | 模块 1（名字待定） | 【待填 —— 在该模块任务书的「数据形状」一节写】 |
+| `module2` | 模块 2（名字待定） | 【待填】 |
+| `module3` | 模块 3（名字待定） | 【待填】 |
+| `module4` | 模块 4（名字待定） | 【待填】 |
+| `visual3d` | 3D 可视化 | `{structure, feature, atoms:[{x,y,z}], bonds:[[i,j]], sites, cell, stacking, params}` |
 | `feynman` | 费曼追问 | `{concept, rounds:[{question,userAnswer,critique}], score}` |
-| `graph` | 知识图谱 · 问题图谱 | `{mode:'knowledge'\|'question', nodes:[{id,label,type,desc,refs}], edges:[{source,target,relation}], focus}` |
-| `micrograph` | 图像诊断 | `{imageUrl, isMicrograph, confidence, defects:[{type,cause,fix,textbookStep}], summary}` |
-| `heatTreatment` | 热处理工艺沙盒 | `{cooling, temperTemp, carbon, structure, hardnessHrc, curve:[[t,h]], diagnosis, warning}` |
+
+> 📌 **这张表是全项目的契约表。** 每个模块的数据形状定下来后，**同步填进来**，
+> 并在群里说一声 —— 前后端都按这张表对字段。
 
 拼写错误有运行时兜底：重名会 warn，没人认领的类型画布会显示「没有功能认领」而不是白屏。
 
 **封闭集合（这几个不要乱加值）**：`relation` = 前置依赖/因果/对比/组成；
 `type`（图谱节点）= 成分/相/组织/性能/工艺/缺陷；`section`（知识库）= 见 `README.md` 契约表。
+
+## 整页模式：什么时候该用，四条硬规矩
+
+默认每个模块渲染在**右栏画布**里（对话流还在左边）。但 `FeatureModule` 可以多填一个
+`page` 组件 —— 填了它，**点这个模块时主区整个换成它**，壳的顶栏/对话流/输入框全部让位。
+代码示例见 `frontend/src/features/pageDemo/`（一个最小可跑的整页示例）。
+
+```ts
+const feature: FeatureModule = {
+  id: 'xxx',
+  title: '...',
+  artifactTypes: ['xxx'],
+  order: 50,
+  preview,
+  Component,        // 画布模式（默认）
+  page: Page,       // ★ 整页模式（可选）—— 只在下面这种情况才填
+}
+```
+
+### 什么时候该用
+
+**技术上没有数量上限** —— 6 个模块全用整页都行，代码里没有任何计数。
+
+真正的判断标准是**这个模块需要的是「更大的画布」，还是「另一种交互形态」**：
+
+| 该用整页 | 不必用整页 |
+|---|---|
+| **管理型界面**：上传、索引、浏览、检索、批量操作 | **展示型模块**：3D、图谱、图表、动画 |
+| **多 tab 工作台**：一个模块里有好几套互不相干的视图 | 单个可视化 |
+| 确实塞不进「对话 + 画布」的形态 | 只是想"大一点" |
+
+> 只想"大一点"的 → 点画布标题栏的 ⛶ **全屏按钮**（不用改代码），别开整页。
+
+### 三条硬规矩
+
+1. **左栏永远是壳的。** 模块不许改左栏、不许在左栏加东西。左栏是产品的统一标识，
+   也是学生离开整页的出口。
+
+2. **配色/字体/圆角必须用 `tokens.css` 的 CSS 变量。** 你可以有完全不同的**布局**，
+   但必须在同一套**设计语言**里。**不许自造一套**（比如米色背景 + 蜂巢底纹 + 另一套圆角）。
+
+   > 让界面显得零散的，**不是"布局不同"，是"设计语言不同"**。
+   > Gmail 的收件箱、日历、设置页布局完全不同，但一看就是一个产品 —— 因为它们共用
+   > 同一套字体、颜色、间距、控件。换了设计语言才是"8 个应用拼起来的"。
+
+3. **必须留一个「能看见 Agent 在干活」的入口。** ★ 这条最重要。
+
+   整页模式下**没有对话栏**，所以模块内要自己提供一个。最自然的形式是一个
+   「智能问答」tab：用户提问 → 看到**工具调用卡片** → 看到**流式回答**。
+
+   **为什么必须留**：这个作品叫「教学 Agent」。三栏工作台、工具调用卡片、流式回答 ——
+   这些是「这是个 Agent」的视觉证据。如果整页界面看起来只是普通网页，
+   **评委就看不到"Agent"在哪了**，那这个作品的核心卖点就丢了。
+
+### 整页模块照样能驱动 Agent
+
+`page` 组件拿到的 props 和 `Component` 完全一样：
+`{ artifact, onSendMessage, onEmitArtifact }`。
+所以整页界面里也能调 `onSendMessage()` 让 Agent 去干活 —— 只是界面由你自己画。
+`pageDemo` 的「智能问答」tab 就是规矩 3 的示范写法。
 
 ## 加/删模块用脚手架，不要手搓
 
@@ -82,9 +172,13 @@ python scripts/module.py rm <名>                    # 连前后端一起删
 **不许编造参数。** 涉及工艺参数、硬度、温度时，数值必须能追溯到教材或任务书原文，
 回答里要给出处（格式：`> 出处：《教材》实验X · 章节名`）。教材没写的，在界面上标注「教材未涉及」。
 
-已知的两个坑（改 `simulate_heat_treatment` 前务必读它的注释）：
+**已知的两个坑**（改后端工具 `simulate_heat_treatment` 的数值模型前务必读它的注释）：
 - 教材那条回火温度-硬度曲线本身就是 45 钢实测值，**0.45%C 处不能再做含碳量修正**
-- 教材在 500℃ 处中温/高温回火区间重叠，模型取 500℃ 归中温回火，500–510℃ 是过渡带
+  （曾因此把 200℃ 回火算成 53 HRC，落在教材 57–60 区间外）
+- 教材在 500℃ 处中温/高温回火区间重叠（40 HRC vs 35 HRC），模型取 500℃ 归中温回火，
+  500–510℃ 是过渡带，界面上要如实提示
+
+改了数值模型后跑 `backend/tests/test_smoke.py` —— 它会逐点校验是否落在教材区间内。
 
 ## 干完必须跑的自检
 
@@ -105,15 +199,27 @@ python backend/tests/test_smoke.py        # 改了数值模型或 chat.py 后必
 #               + cd frontend && npm run dev
 ```
 
-**界面在 http://localhost:5173**（8000 是后端 API，打开只有一段 JSON，不是界面）。
+**界面地址看 Vite 启动时打印的 `Local:` 那一行** —— 默认 5173，被别的项目占了会自动往后跳
+（5174、5175…）。**别照抄 README 里写死的数字**；打开错端口会看到别的项目，症状是「模块点不动」。
+8000 是后端 API，打开只有一段 JSON，不是界面。
 
-点左栏模块 → 画布用 `preview.ts` 的样例数据渲染 → 右上角标注「预览数据」。
+点左栏模块 → 进这个模块**自己的对话** → 画布默认是空的（可视化由对话触发）。
+想看模块自带的样例数据，画布空态里点「查看样例数据」→ 右上角会标注「预览数据」。
 **这一步不需要后端、不需要 API Key**，改完代码浏览器自动刷新。
 
 ## 参考实现
 
-`frontend/src/features/heatTreatment/` 是**全项目的样板**：有本地交互、内联 SVG 绘图、
-参考数值模型，注释里写了「组件该怎么写」的四条约定。**做新模块前先读它。**
+**热处理工艺沙盒**是全项目的样板（本地交互、内联 SVG 绘图、参考数值模型，
+注释里写了「组件该怎么写」的四条约定）。做新模块前先读它。
+
+它现在在 **`_backup-旧模块/heatTreatment/`**（2026-10-11 重构成 module1~8 之前的版本）：
+
+```bash
+ls _backup-旧模块/heatTreatment/     # Component.tsx / model.ts / preview.ts / index.ts
+```
+
+**它不会出现在左栏**（不在 `frontend/src/features/` 下），只是拿来抄结构用的。
+看完不需要恢复它 —— 直接照着写自己的组件即可。
 
 ## 环境坑
 

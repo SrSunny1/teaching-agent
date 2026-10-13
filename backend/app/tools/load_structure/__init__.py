@@ -102,34 +102,39 @@ COORDINATION = {"sc": 6, "bcc": 8, "fcc": 12, "hcp": 12}
 PACKING = {"sc": 0.52, "bcc": 0.68, "fcc": 0.74, "hcp": 0.74}
 
 
-def _sites(structure: str, feature: str) -> list[dict]:
-    """间隙位置。"""
-    if feature == "octahedral":
-        if structure == "fcc":
-            return [_mark(p, "八面体间隙") for p in _edge_centers() + [(0.5 * A, 0.5 * A, 0.5 * A)]]
-        if structure == "bcc":
-            return [_mark(p, "八面体间隙") for p in _face_centers() + _edge_centers()]
-        return []
-    if feature == "tetrahedral":
-        if structure == "fcc":
-            return [
-                _mark((x * A, y * A, z * A), "四面体间隙")
-                for x, y, z in product((0.25, 0.75), repeat=3)
-            ]
-        if structure == "bcc":
-            pts = set()
-            for face_axis in range(3):
-                for u, v in ((0.5, 0.25), (0.5, 0.75), (0.25, 0.5), (0.75, 0.5)):
-                    for fixed in (0.0, 1.0):
-                        p = [0.0, 0.0, 0.0]
-                        p[face_axis] = fixed * A
-                        others = [i for i in range(3) if i != face_axis]
-                        p[others[0]] = u * A
-                        p[others[1]] = v * A
-                        pts.add(tuple(round(v2, 6) for v2 in p))
-            return [_mark(p, "四面体间隙") for p in sorted(pts)]
-        return []
-    return []
+def _sites(structure: str) -> list[dict]:
+    """全部间隙位置。
+
+    ★ 不管 feature 是什么，都把可用的间隙类型一起返回 —— 因为看间隙时
+    晶格骨架也要在（否则学生看不到间隙「挤在谁之间」）。前端按 `kind` 过滤即可。
+    """
+    out: list[dict] = []
+
+    if structure == "fcc":
+        out += [_mark(p, "八面体间隙") for p in _edge_centers() + [(0.5 * A, 0.5 * A, 0.5 * A)]]
+        out += [
+            _mark((x * A, y * A, z * A), "四面体间隙")
+            for x, y, z in product((0.25, 0.75), repeat=3)
+        ]
+    elif structure == "bcc":
+        out += [_mark(p, "八面体间隙") for p in _face_centers() + _edge_centers()]
+        pts: set = set()
+        for face_axis in range(3):
+            for u, v in ((0.5, 0.25), (0.5, 0.75), (0.25, 0.5), (0.75, 0.5)):
+                for fixed in (0.0, 1.0):
+                    p = [0.0, 0.0, 0.0]
+                    p[face_axis] = fixed * A
+                    others = [i for i in range(3) if i != face_axis]
+                    p[others[0]] = u * A
+                    p[others[1]] = v * A
+                    pts.add(tuple(round(v2, 6) for v2 in p))
+        out += [_mark(p, "四面体间隙") for p in sorted(pts)]
+    elif structure == "hcp":
+        # ⬜ 待办：HCP 的间隙位置还没实现（教材实验一要求算）。
+        #    涉及六方晶胞的间隙几何，需要对照教材核一遍个数再补。
+        pass
+
+    return out
 
 
 def _mark(p: tuple[float, float, float], kind: str) -> dict:
@@ -168,8 +173,8 @@ async def _run(args: dict) -> ToolResult:
         "structure": structure,
         "feature": feature,
         "atoms": atoms,
-        "bonds": _bonds(raw, NN[structure]) if feature in ("cell", "stacking") else [],
-        "sites": _sites(structure, feature),
+        "bonds": _bonds(raw, NN[structure]),
+        "sites": _sites(structure),
         "cell": {"a": A, "b": A, "c": A * C_OVER_A if structure == "hcp" else A},
         "stacking": _stacking(structure),
         "params": {
@@ -196,7 +201,7 @@ async def _run(args: dict) -> ToolResult:
         summary=f"{STRUCTURE_LABEL[structure]} · {len(atoms)} 个原子位点"
         + (f" · {len(payload['sites'])} 个间隙" if payload["sites"] else ""),
         detail="\n".join(detail_lines),
-        artifact_type="structure3d",
+        artifact_type="visual3d",
         artifact=payload,
     )
 

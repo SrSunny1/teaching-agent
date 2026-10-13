@@ -1,6 +1,6 @@
 import type { Artifact, ArtifactType, FeatureModule } from '../lib/types'
 import { isRegisteredArtifact, knownArtifactTypes } from '../lib/registry'
-import { IconPanel } from './icons'
+import { IconCollapse, IconExpand, IconPanel } from './icons'
 
 interface Props {
   /** 当前该渲染哪个功能。undefined 表示没有功能接管画布 */
@@ -11,12 +11,20 @@ interface Props {
   onClose: () => void
   onSendMessage: (text: string) => void
   onEmitArtifact: (type: ArtifactType, data: unknown) => void
+  /** 手动加载当前模块的样例数据（画布空态里的按钮） */
+  onLoadPreview: () => void
+  /** 画布是否处于全屏（对话栏收起） */
+  canvasFull: boolean
+  onToggleFullscreen: () => void
 }
 
 /**
  * 右栏画布。
  * ★ 这个组件不认识任何具体功能 —— 它只按 artifactType 找到 owner，把 data 丢给它渲染。
  * 新增功能不需要改这里。
+ *
+ * 画布默认是空的：可视化由对话触发，而不是点进模块就自动加载。
+ * 想看模块的样例数据，空态里有个按钮。
  */
 export default function ArtifactPanel({
   feature,
@@ -25,8 +33,12 @@ export default function ArtifactPanel({
   onClose,
   onSendMessage,
   onEmitArtifact,
+  onLoadPreview,
+  canvasFull,
+  onToggleFullscreen,
 }: Props) {
   const title = feature ? feature.title : '画布'
+  const hasPreview = Boolean(feature && feature.preview !== undefined && feature.artifactTypes.length > 0)
 
   return (
     <aside className="artifact">
@@ -38,6 +50,14 @@ export default function ArtifactPanel({
           </span>
         )}
         <span style={{ flex: 1 }} />
+        <button
+          className="icon-btn"
+          onClick={onToggleFullscreen}
+          title={canvasFull ? '退出全屏（Esc）' : '画布全屏 —— 把对话栏收起来，画布占满'}
+          style={{ color: canvasFull ? 'var(--accent)' : undefined }}
+        >
+          {canvasFull ? <IconCollapse /> : <IconExpand />}
+        </button>
         <button className="icon-btn" onClick={onClose} title="收起画布">
           <IconPanel />
         </button>
@@ -66,7 +86,21 @@ export default function ArtifactPanel({
             <div style={{ opacity: 0.5, marginBottom: 4 }}>
               <IconPanel size={22} />
             </div>
-            <div>左栏选一个功能模块，或直接提问触发</div>
+            <div>
+              {feature
+                ? '在左侧对话里提问，Agent 调到你的工具后，结果会显示在这里'
+                : '左栏选一个模块，或直接提问触发'}
+            </div>
+            {hasPreview && (
+              <button
+                className="chip"
+                style={{ marginTop: 12 }}
+                onClick={onLoadPreview}
+                title="加载这个模块自带的样例数据，方便看组件效果"
+              >
+                查看样例数据
+              </button>
+            )}
           </div>
         )}
       </div>

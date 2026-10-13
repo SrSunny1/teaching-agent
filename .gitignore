@@ -9,3 +9,6 @@ venv/
 .DS_Store
 *.log
 .vite/
+
+# 旧模块备份（2026-10-11 重构成 module1-8 前存的），确认不用后可删
+_backup*/

@@ -1,40 +1,49 @@
 # GitHub 代码所有者。推到 GitHub 后，下面这些路径的 PR 会自动请求对应的人 review。
 #
-# 当前状态：
-#   - 框架（壳）由 SrSunny1 独占
-#   - 四个模块负责人还没具体分配，暂用 @A @B @C @D 占位
-#   - ★ 分配定了之后，把 @A~@D 换成真实 GitHub 用户名（下面的分组可以整个重排）
+# 当前状态（2026-10-13）：
+#   - 6 个模块：模块 1~4（名字待定）+ 已定名的 visual3d / feynman
+#   - 原模块 5、6 已删除（负责人 C 暂无模块，等重新分配）
+#   - 框架（壳）由 SrSunny1 独占，他同时负责 visual3d / feynman
+#   - @A @B 是代号，尚未对应到真实 GitHub 用户名
+#
+# ★ 模块名定了之后要改三处：
+#   1. 本文件里的路径
+#   2. 各 frontend/src/features/<名>/AGENTS.md 的「模块名」行
+#   3. 根目录 AGENTS.md 的「先读你的任务书」表格
+#   用 `python scripts/module.py list` 随时核对当前状态。
 
 # ─────────── 教学 agent 框架：单人独占，其余人不要改 ───────────
-# 全项目的公共骨架。任何人能看到、能运行，但只有框架负责人能改。
-# 需要框架层的新能力时，找框架负责人加，不要自己动手。
 /frontend/src/shell/            @SrSunny1
 /frontend/src/styles/           @SrSunny1
 /frontend/src/lib/types.ts      @SrSunny1
 /backend/app/chat.py            @SrSunny1
 /backend/app/events.py          @SrSunny1
+/AGENTS.md                      @SrSunny1
 /CODEOWNERS                     @SrSunny1
 
-# ─────────── 各功能模块：各自的负责人（分组为暂定）───────────
+# ─────────── SrSunny1 的模块 ───────────
+/frontend/src/features/visual3d/        @SrSunny1
+/backend/app/tools/load_structure/      @SrSunny1
 
-# A —— 知识库、术语库问答 + 材料结构 3D 可视化
-/frontend/src/features/knowledge/           @A
-/frontend/src/features/structure3d/         @A
-/backend/app/tools/search_knowledge/        @A
-/backend/app/tools/troubleshoot_instrument/ @A
-/backend/app/tools/aggregate_safety_rules/  @A
-/backend/app/tools/load_structure/          @A
-/backend/knowledge/                         @A
+/frontend/src/features/feynman/         @SrSunny1
+#   feynman 的后端工具还没建。建好后在下面补一行。
 
-# B —— 费曼追问 + 知识图谱/问题图谱
-/frontend/src/features/feynman/             @B
-/frontend/src/features/graph/               @B
-/backend/app/tools/query_graph/             @B
+# ─────────── 模块 1~4 —— 待分配，暂用代号 ───────────
 
-# C —— 图像诊断
-/frontend/src/features/micrograph/          @C
-/backend/app/tools/diagnose_micrograph/     @C
+# A
+/frontend/src/features/module1/       @A
+/frontend/src/features/module2/       @A
 
-# D —— 热处理工艺沙盒
-/frontend/src/features/heatTreatment/       @D
-/backend/app/tools/simulate_heat_treatment/ @D
+# B
+/frontend/src/features/module3/       @B
+/frontend/src/features/module4/       @B
+
+# 注：C 暂无模块（原模块 5、6 已删除）。重新分配时在本文件加回来。
+
+# ─────────── 共享文件：改之前先在群里说一声 ───────────
+# /frontend/src/lib/              （types.ts 已归框架，其余共享）
+# /package.json
+# /backend/app/config.py
+# /backend/app/main.py
+# /README.md
+# /协作流程.md

@@ -64,6 +64,17 @@ export interface FeatureProps {
   onSendMessage: (text: string) => void
   /** 功能组件想把新产物推给画布时调用 */
   onEmitArtifact: (type: ArtifactType, data: unknown) => void
+  /**
+   * 当前对话的消息（只读）。
+   *
+   * ★ 整页模式**必须**用它 —— 整页下壳不渲染对话栏，如果模块自己不画出来，
+   *   用户就看不到 Agent 的回答、看不到工具调用卡片，等于「Agent 消失了」。
+   *   这是硬规矩 3（必须留一个能看见 Agent 干活的入口）的实现手段。
+   *   画布模式的模块一般用不到。
+   */
+  messages?: Message[]
+  /** Agent 是否正在生成。整页模式用它显示「正在思考…」之类 */
+  busy?: boolean
 }
 
 /**
@@ -87,7 +98,28 @@ export interface FeatureModule {
    * 不填则点进去是空状态。
    */
   preview?: unknown
+
+  /**
+   * 画布模式组件（默认）。渲染在右栏画布里，和对话流并排。
+   */
   Component: ComponentType<FeatureProps>
+
+  /**
+   * ★ 整页模式组件（可选）。
+   *
+   * 填了它，点这个模块时**主区整个换成这个组件** —— 壳的顶栏、对话流、输入框全部让位。
+   * 壳只保留左栏导航。模块依旧拿得到 onSendMessage，所以照样能驱动 Agent。
+   *
+   * ⚠️ **只在「确实需要另一种交互形态」时用**（管理型界面、多 tab 工作台、上传/索引/浏览…）。
+   *    展示型的模块（3D、图谱、图表、动画）用 Component + 画布全屏就够了，**别开整页**。
+   *
+   * 四条硬规矩（详见根目录 AGENTS.md）：
+   *   1. 左栏永远是壳的，模块不许改
+   *   2. 配色/字体/圆角必须用 tokens.css 的变量，不许自造一套设计语言
+   *   3. 必须留一个「返回对话」的出口
+   *   4. 克制 —— 8 个模块里最多 2~3 个用整页
+   */
+  page?: ComponentType<FeatureProps>
 }
 
 /* ─────────────── SSE 事件（与后端一一对应） ─────────────── */

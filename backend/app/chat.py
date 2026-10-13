@@ -21,8 +21,15 @@ from .tools import TOOLS, specs
 async def run_chat(history: list[dict[str, Any]]) -> AsyncIterator[dict]:
     """history 为 [{'role': 'user'|'assistant', 'content': str}, ...]"""
 
-    if not config.API_KEY:
-        yield error("未配置 DEEPSEEK_API_KEY。请在 backend/.env 里填写后重启后端。")
+    if not config.has_api_key():
+        if config.API_KEY.strip():
+            # 填了但看着是占位符 —— 单独提示，否则人会以为「我明明填了啊」
+            yield error(
+                "backend/.env 里的 DEEPSEEK_API_KEY 看着还是个占位符（sk-xxxx…），"
+                "不是真实 Key。请去 platform.deepseek.com 申请一个填进去，然后重启后端。"
+            )
+        else:
+            yield error("未配置 DEEPSEEK_API_KEY。请在 backend/.env 里填写后重启后端。")
         yield done()
         return
 

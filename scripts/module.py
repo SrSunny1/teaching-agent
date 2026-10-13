@@ -101,7 +101,7 @@ COMPONENT_TPL = """import type {{ FeatureProps }} from '../../lib/types'
  *
  * ★ 这是脚手架生成的占位实现，请替换。
  *
- * 怎么写，参考 features/heatTreatment/ —— 那是全项目的样板：
+ * 怎么写，参考 _backup-旧模块/heatTreatment/ —— 那是全项目的样板：
  *   1. 从 props.artifact?.data 读数据
  *   2. 本地交互即时反馈，不要自己发网络请求
  *   3. 需要 Agent 干活时调 props.onSendMessage()
@@ -147,6 +147,95 @@ export default {{
   placeholder: true,
   note: '{title} 的样例数据，请在 preview.ts 里替换',
 }}
+"""
+
+# ★ 这份是给「到了这个模块目录里干活的编码 agent」看的。
+# Codex 支持分层 AGENTS.md：作用域是所在文件夹的整棵子树，嵌套更深的优先。
+# 所以把模块任务写在这里，agent 一进这个目录就自动知道要干什么。
+AGENTS_MD_TPL = """# {title} —— 模块任务书
+
+> **作用域：`frontend/src/features/{name}/` 及其子目录。**
+> 项目级规则（三道线、契约、数值要求、自检命令）在仓库根目录的 [`AGENTS.md`](../../../../AGENTS.md)，**先读那个**。
+> 两者冲突时以本文件为准（嵌套更深的优先）。
+
+| 项 | 值 |
+|---|---|
+| 模块名 | **{title}** |
+| artifactType | `{artifact}` |
+| 前端 | `frontend/src/features/{name}/` |
+| 后端工具 | {tool} |
+| 左栏顺序 | {order} |
+| 负责人 | 【待分配】 |
+
+---
+
+## 一、这个模块要做什么
+
+**【待填】** 写清楚三件事，写得越具体 agent 越不会跑偏：
+
+1. 它解决什么**教学问题**？学生用它做什么？
+2. 对应**教材哪个实验** / 任务书哪个劳育模块？（知识边界是封闭的，只能在这两个来源里找）
+3. 界面上**长什么样**？（一句话描述画布上出现的东西）
+
+## 二、数据形状
+
+后端工具返回 `ToolResult(..., artifact_type="{artifact}", artifact={{...}})`，
+`artifact` 就是下面这个 JSON —— 前端 `Component.tsx` 从 `props.artifact?.data` 读它。
+
+```json
+{{
+  "_note": "【待填】把字段写出来。哪怕只是大概，也比让 agent 自己编强 ——",
+  "_note2": "前后端字段对不上（尤其 camelCase vs snake_case）是最常见的联调事故。",
+  "example": {{
+    "a": "string",
+    "b": [{{ "c": 0, "d": "string" }}],
+    "warning": null
+  }}
+}}
+```
+
+**封闭集合**（这几个不要乱加值）：`relation` = 前置依赖/因果/对比/组成；
+`type`（图谱节点）= 成分/相/组织/性能/工艺/缺陷。**JSON 字段一律 camelCase。**
+
+## 三、当前状态
+
+- ⬜ **全部待做。** 这是个新模块，没有历史包袱，也没有遗留代码要兼容。
+
+## 四、验收标准
+
+**通用三条（每个模块都必须过）：**
+
+- 左栏点进来 → `preview.ts` 的样例数据能正常渲染
+- 对话里提问 → 触发你的工具 → 画布显示真实结果（右上角「预览数据」标签消失）
+- `python scripts/check-boundaries.py` 全绿
+
+**【待填】** 再加上本模块特有的、可检验的验收点。
+好的例子：「45 钢水冷 + 200℃ 回火必须落在 57–60 HRC（教材区间）」。
+差的例子：「能渲染」——没法检验。
+
+## 五、怎么写（四条约定，所有模块通用）
+
+1. **从 `props.artifact?.data` 读数据。** `null` 就是还没数据，显示空态。
+2. **本地交互即时反馈** —— 拖滑杆、切视图这类**不要发网络请求**。
+3. **需要 Agent 干活时调 `props.onSendMessage('...')`。**
+4. **要把新状态推回画布时调 `props.onEmitArtifact('类型', {{...}})`。**
+
+**两条硬约束：**
+
+- **不要在组件里自己发网络请求。** 需要数据就让 Agent 去调工具 —— 这样所有可视化
+  走同一条链路，录屏时评委也能看到 Agent 真的在工作。
+- **不要改 `tokens.css`。** 样式优先用它已有的类（`.feat` / `.kv` / `.box` / `.chip`），
+  要自定义就在组件里写内联样式。那是框架负责人的文件。
+
+**晶体学、数值计算、图布局这类重计算一律放 Python 后端，前端只渲染** ——
+项目约定（前端只有一个人，负担要减）。
+
+## 六、只改这些
+
+- `frontend/src/features/{name}/`
+- {backend_line}
+
+其他地方一律不碰。提交前跑 `python scripts/check-boundaries.py`。
 """
 
 TOOL_TPL = """\"\"\"
@@ -238,7 +327,18 @@ def cmd_new(args) -> int:
         COMPONENT_TPL.format(name=name, title=args.title), encoding="utf-8")
     (feat_dir / "preview.ts").write_text(
         PREVIEW_TPL.format(title=args.title), encoding="utf-8")
-    print(f"  √ frontend/src/features/{name}/  (index.ts + Component.tsx + preview.ts)")
+
+    # 模块任务书 —— 给编码 agent 看的。Codex 支持分层 AGENTS.md，
+    # 作用域是本文件夹的整棵子树，所以 agent 一进这个目录就知道要干什么。
+    backend_line = (f"`backend/app/tools/{args.tool}/`"
+                    if args.tool else "（本模块没有后端工具）")
+    (feat_dir / "AGENTS.md").write_text(
+        AGENTS_MD_TPL.format(name=name, title=args.title, artifact=types[0],
+                             tool=args.tool or "（无）", order=args.order,
+                             backend_line=backend_line),
+        encoding="utf-8")
+
+    print(f"  √ frontend/src/features/{name}/  (index.ts + Component.tsx + preview.ts + AGENTS.md)")
 
     # 后端（可选）
     if args.tool:
@@ -254,13 +354,17 @@ def cmd_new(args) -> int:
 
     print()
     print("接下来：")
-    print(f"  1. 改 frontend/src/features/{name}/preview.ts 的样例数据")
+    print(f"  1. ★ 填 frontend/src/features/{name}/AGENTS.md 的四个 TODO")
+    print(f"     → 这是给编码 agent 的任务书，写清楚了它才不会跑偏")
+    print(f"  2. 改 preview.ts 的样例数据")
     print(f"     → 存盘，浏览器自动刷新，点左栏就能看到你的模块")
-    print(f"  2. 改 Component.tsx 做真正的渲染（参考 features/heatTreatment/）")
+    print(f"  3. 改 Component.tsx 做真正的渲染（参考 _backup-旧模块/heatTreatment/）")
     if args.tool:
-        print(f"  3. 实现 backend/app/tools/{args.tool}/__init__.py 的逻辑")
-    print(f"  4. 把自己加进 CODEOWNERS")
-    print(f"  5. python scripts/check-boundaries.py   ← 确认没越界")
+        print(f"  4. 实现 backend/app/tools/{args.tool}/__init__.py 的逻辑")
+    print(f"  5. 在仓库根目录 AGENTS.md 的「先读你的任务书」表格里加一行")
+    print(f"     （不在表里的话，agent 从根目录启动时不知道去哪找）")
+    print(f"  6. 把自己加进 CODEOWNERS")
+    print(f"  7. python scripts/check-boundaries.py   ← 确认没越界")
     return 0
 
 
@@ -345,6 +449,10 @@ def cmd_rm(args) -> int:
         p = ROOT / "CODEOWNERS"
         if p.exists() and name in p.read_text(encoding="utf-8", errors="replace"):
             leftovers.append("CODEOWNERS 里还有它的路径")
+        p = ROOT / "AGENTS.md"
+        if p.exists() and f"features/{name}/AGENTS.md" in p.read_text(encoding="utf-8", errors="replace"):
+            leftovers.append("AGENTS.md 的「先读你的任务书」表格里还有它一行 —— "
+                             "不清掉的话，agent 会去找一个已经不存在的任务书")
 
     if leftovers:
         print()

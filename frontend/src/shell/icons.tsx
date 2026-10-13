@@ -89,3 +89,21 @@ export const IconCheck = ({ size = 14, className }: P) => (
     <path d="M3 8.5L6.3 12L13 4.5" />
   </svg>
 )
+
+export const IconChat = ({ size = 14, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M14 8.5c0 2.8-2.7 5-6 5-.7 0-1.4-.1-2-.3L2.5 14l1-2.2C2.6 11 2 9.8 2 8.5 2 5.7 4.7 3.5 8 3.5s6 2.2 6 5z" />
+  </svg>
+)
+
+export const IconExpand = ({ size = 14, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M6 2.5H2.5V6M10 2.5h3.5V6M6 13.5H2.5V10M10 13.5h3.5V10" />
+  </svg>
+)
+
+export const IconCollapse = ({ size = 14, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M2.5 6H6V2.5M13.5 6H10V2.5M2.5 10H6v3.5M13.5 10H10v3.5" />
+  </svg>
+)

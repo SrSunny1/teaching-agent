@@ -63,19 +63,34 @@ cd frontend && npm run dev
 装完环境就能看，**不需要启动后端、不需要 API Key**：
 
 ```bash
-cd frontend && npm run dev     # 打开 http://localhost:5173
+cd frontend && npm run dev
 ```
 
-点左栏自己的模块 → 画布用 `preview.ts` 里的样例数据渲染 → 右上角标注「预览数据」。
+点左栏模块 → 进这个模块**自己的对话** → 画布默认是空的（可视化由对话触发）。
+想看模块自带的样例数据，画布空态里点「查看样例数据」。
+
+### ★ 界面在哪个端口？看 Vite 启动时打印的那行
+
+**默认 5173，但被别的项目占了就自动换端口。** 以终端里 Vite 实际打印的为准：
+
+```
+  VITE v5.x.x  ready in xxx ms
+
+  ➜  Local:   http://localhost:5173/     ← 就是这个
+```
 
 | 地址 | 是什么 |
 |---|---|
-| **http://localhost:5173** | **★ 界面在这里** |
+| **Vite 打印的 Local 地址** | **★ 界面在这里** |
 | http://localhost:8000 | 后端 API，只返回一段说明 JSON，**不是界面** |
 | http://localhost:8000/docs | 接口文档，可交互调试 |
 
-后端没启动、或没配 Key 时，前端自动进 **mock 模式**，界面照样能点。
-点左栏自己的模块，画布会用自带样例数据渲染，右上角标注「预览数据」。
+> ⚠️ **常见误区：打开 5173 却看到别的项目。**
+> 如果本机同时跑着别的前端（用 `ps aux | grep vite` 查），Vite 会自动换到 5174、5175…
+> 你以为在看教学 agent，其实看的是别的项目 —— 症状就是「模块点不动」。
+> **对照 Vite 启动时打印的 Local 地址**，别照着 README 写死的数字敲。
+
+后端没启动、或没配 Key 时，前端自动进 **mock 模式**，界面照样能点（预设脚本驱动）。
 
 自检（**提交前必跑**）：
 
@@ -86,6 +101,10 @@ python scripts/check-boundaries.py
 # 数值模型 + Agent 循环 + 自动注册（要装过后端依赖）
 # Windows：backend\.venv\Scripts\python backend\tests\test_smoke.py
 # 其他：  python3 backend/tests/test_smoke.py
+
+# 检索质量：验证「知识库内的能命中、库外的能拒绝」
+# 改了检索逻辑、术语表或知识库内容后必跑
+cd backend && python tests/retrieval_probe.py
 ```
 
 ---
@@ -103,18 +122,29 @@ python scripts/check-boundaries.py
 
 左栏顺序由各 `index.ts` 的 `order` 字段控制。
 
-| # | 模块 | artifactType | 前端 | 后端工具 | 负责人 |
-|---|---|---|---|---|---|
-| 1 | 知识库 · 术语库问答 | `knowledge` | `features/knowledge/` | `search_knowledge` / `troubleshoot_instrument` / `aggregate_safety_rules` | 同学1 |
-| 2 | 材料结构 3D 可视化 | `structure3d` | `features/structure3d/` | `load_structure` | 同学1 |
-| 3 | 费曼追问 | `feynman` | `features/feynman/` | —（走对话流） | 同学2 |
-| 4 | 知识图谱 · 问题图谱 | `graph` | `features/graph/` | `query_graph` | 同学2 |
-| 5 | 图像诊断 | `micrograph` | `features/micrograph/` | `diagnose_micrograph` | 同学3 |
-| 6 | 热处理工艺沙盒 | `heatTreatment` | `features/heatTreatment/` | `simulate_heat_treatment` | 同学4 |
-| — | **框架（壳）** | — | `src/shell/`、`src/lib/` | `app/chat.py` | **待指定** |
+**当前 6 个模块：**`visual3d` / `feynman` 已定名并由 SrSunny1 负责；模块 1~4 是编号占位，名字待定。
+（原模块 5、6 已删除。）
 
-> ⚠️ **框架必须由一个人独占。** 6 个模块都有人，但框架没有 owner 就会烂掉。
-> 定了之后把 `CODEOWNERS` 里的 `@p1`~`@p4` 换成真实 GitHub 用户名。
+| # | 模块 | artifactType | 前端 | 负责人 |
+|---|---|---|---|---|
+| 1 | 模块 1（名字待定） | `module1` | `features/module1/` | A |
+| 2 | 模块 2（名字待定） | `module2` | `features/module2/` | A |
+| 3 | 模块 3（名字待定） | `module3` | `features/module3/` | B |
+| 4 | 模块 4（名字待定） | `module4` | `features/module4/` | B |
+| — | **3D 可视化** | `visual3d` | `features/visual3d/` | **SrSunny1** |
+| — | **费曼追问** | `feynman` | `features/feynman/` | **SrSunny1** |
+| — | **框架（壳）** | — | `src/shell/`、`src/lib/` | **SrSunny1** |
+
+> 📌 **名字定了之后要改三处**：各 `features/<名>/AGENTS.md` 的「模块名」行、
+> `CODEOWNERS` 的路径、根 `AGENTS.md` 的任务书索引表。
+> 用 `python scripts/module.py list` 随时核对当前状态。
+
+> ⚠️ **框架必须由一个人独占**（现在是 SrSunny1，同时兼做 visual3d / feynman）。
+> `CODEOWNERS` 里的 `@A` `@B` 还是代号，**定了真实 GitHub 用户名后要替换**，否则 PR 会自动找错人。
+> `@C`、`@D` 暂无模块（原模块 5、6 已删除）。
+
+> **参考实现**：热处理工艺沙盒在 `_backup-旧模块/heatTreatment/`（重构前的版本），
+> 是全项目的组件样板 —— 抄它的结构，但不需要恢复它。
 
 ---
 
@@ -129,11 +159,11 @@ python scripts/check-boundaries.py
 
 ```ts
 export default {
-  id: 'heatTreatment',            // 必须等于文件夹名
-  title: '热处理工艺沙盒',          // 左栏显示名
-  artifactTypes: ['heatTreatment'], // 全局唯一，见下表
-  order: 60,                       // 左栏排序
-  preview,                         // 样例数据，见第六节
+  id: 'feynman',                   // 必须等于文件夹名
+  title: '费曼追问',                 // 左栏显示名
+  artifactTypes: ['feynman'],       // 全局唯一，见下表
+  order: 80,                       // 左栏排序
+  preview,                         // 样例数据，在 preview.ts
   Component,
 } satisfies FeatureModule
 ```
@@ -148,14 +178,11 @@ export default {
 
 **JSON 字段一律 camelCase。**
 
-| artifactType | 数据形状 |
-|---|---|
-| `knowledge` | `{query, chunks: [{source, experiment, section, text}], terms: [{zh, en, definition, refs}]}` |
-| `structure3d` | `{structure, feature, atoms: [{x,y,z}], bonds: [[i,j]], sites, cell, stacking, params}` |
-| `feynman` | `{concept, rounds: [{question, userAnswer, critique}], score}` |
-| `graph` | `{mode: 'knowledge'\|'question', nodes: [{id,label,type,desc,refs}], edges: [{source,target,relation}], focus}` |
-| `micrograph` | `{imageUrl, isMicrograph, confidence, defects: [{type, cause, fix, textbookStep}], summary}` |
-| `heatTreatment` | `{cooling, temperTemp, carbon, structure, hardnessHrc, curve: [[t,h]], diagnosis, warning}` |
+| artifactType | 模块 | 数据形状 |
+|---|---|---|
+| `visual3d` | 3D 可视化 | `{structure, feature, atoms: [{x,y,z}], bonds: [[i,j]], sites, cell, stacking, params}` |
+| `feynman` | 费曼追问 | `{concept, rounds: [{question, userAnswer, critique}], score}` |
+| `module1`~`module4` | 模块 1~4（名字待定） | 【待填 —— 在各任务书的「数据形状」一节写】 |
 
 ### SSE 事件（只有 7 种，不许私自加第 8 种）
 
@@ -247,7 +274,7 @@ python scripts/module.py new <名> --title "显示名" --artifact <类型> [--to
    4. 要把新状态推回画布时调 props.onEmitArtifact('你的类型', {...})
 ```
 
-**`features/heatTreatment/` 是全项目的样板**（本地交互 + 内联 SVG 绘图 + 数值模型 + 注释），
+**`_backup-旧模块/heatTreatment/` 是全项目的样板**（本地交互 + 内联 SVG 绘图 + 数值模型 + 注释），
 动手前先读它。样式优先用 `tokens.css` 里已有的类（`.feat` / `.kv` / `.box` / `.chip`），
 要自定义就在组件里写内联样式，**不要改 `tokens.css`**（那是框架负责人的文件）。
 
@@ -276,7 +303,7 @@ JSON 字段一律 camelCase。
 <现在有什么、缺什么。例如：
 - 前端 Component.tsx 是脚手架占位，只把 JSON 打印出来
 - 后端工具已能产出 artifact，但 xxx 字段恒为空
-- 参考实现在 features/heatTreatment/>
+- 参考实现在 `_backup-旧模块/heatTreatment/`>
 
 【要做的】
 1. <具体步骤，带文件路径>

@@ -1,4 +1,5 @@
 import type { ConnectionState, FeatureModule } from '../lib/types'
+import { IconChat } from './icons'
 
 /** 知识边界导航。纯展示，用来告诉评委「Agent 的知识范围是封闭的」。 */
 const TEXTBOOK = [
@@ -18,11 +19,15 @@ const LABOR = [
   '模块四 · 废弃物分类与资源回收',
 ]
 
+/** 全局对话的 key，与 App.tsx 里的 GLOBAL_CONV 对应 */
+const GLOBAL_CONV = '__global__'
+
 interface Props {
   collapsed: boolean
   features: FeatureModule[]
-  activeId: string | null
-  onPick: (f: FeatureModule) => void
+  /** 当前激活的对话 key（= 模块 id，或 __global__） */
+  activeId: string
+  onPick: (f: FeatureModule | null) => void
   connection: ConnectionState
 }
 
@@ -47,16 +52,32 @@ export default function Sidebar({ collapsed, features, activeId, onPick, connect
       </div>
 
       <div className="sidebar-scroll">
-        <div className="sidebar-section">功能模块</div>
+        {/* ── 对话（每条互不干扰） ── */}
+        <div className="sidebar-section">对话</div>
+        <button
+          className={`nav-item${activeId === GLOBAL_CONV ? ' active' : ''}`}
+          onClick={() => onPick(null)}
+          title="不属于任何模块的通用对话"
+        >
+          <span style={{ display: 'grid', flexShrink: 0, opacity: 0.75 }}>
+            <IconChat />
+          </span>
+          <span className="label">全局对话</span>
+        </button>
+
+        {/* ── 功能模块：点进某个模块 = 进入它的对话 ── */}
+        <div className="sidebar-section" style={{ marginTop: 14 }}>
+          模块对话
+        </div>
         {features.length === 0 && (
           <div style={{ padding: '4px 9px', fontSize: 'var(--fs-sm)', color: 'var(--text-faint)' }}>
-            尚未注册任何功能
+            尚未注册任何模块
           </div>
         )}
         {features.map((f) => (
           <button
             key={f.id}
-            className={`nav-item${f.id === activeId ? ' active' : ''}`}
+            className={`nav-item${activeId === f.id ? ' active' : ''}`}
             onClick={() => onPick(f)}
             title={f.title}
           >

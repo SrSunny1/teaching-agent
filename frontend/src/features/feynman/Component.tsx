@@ -3,13 +3,15 @@ import type { FeatureProps } from '../../lib/types'
 /**
  * 费曼追问（feynman）
  *
- * TODO（负责人请补全）:
- * - 渲染 {concept, rounds:[{question, userAnswer, critique}], score}
- * - 追问逻辑走后端，本组件只负责把 rounds 画成时间线
- * - 至少 3 轮追问后才允许给出总评
+ * ★ 这是脚手架生成的占位实现，请替换。
  *
- * 数据形状见 README.md 的「三、契约」。
- * 完整实现可参考 features/heatTreatment/。
+ * 怎么写，参考 _backup-旧模块/heatTreatment/ —— 那是全项目的样板：
+ *   1. 从 props.artifact?.data 读数据
+ *   2. 本地交互即时反馈，不要自己发网络请求
+ *   3. 需要 Agent 干活时调 props.onSendMessage()
+ *   4. 要把新状态推给画布时调 props.onEmitArtifact()
+ *
+ * 数据形状由你自己定，定好后写进 README.md 第三节的契约表，并告诉其他人。
  */
 export default function Component({ artifact }: FeatureProps) {
   const data = artifact?.data
@@ -17,18 +19,18 @@ export default function Component({ artifact }: FeatureProps) {
   return (
     <div className="feat">
       <h3>费曼追问</h3>
-      <div className="sub">用户复述 → Agent 扮演初学者逐层追问 → 对照评价</div>
+      <div className="sub">脚手架生成的占位 —— 待实现</div>
 
       {!data && (
         <div className="box">
-          等待 Agent 触发 —— 在对话里提问，或让 Agent 调用对应工具
+          在对话里提问，Agent 调到你的工具后，结果会显示在这里
         </div>
       )}
 
       {data ? (
         <>
           <div className="sub" style={{ marginBottom: 6 }}>
-            当前产物（占位渲染，待替换为真实可视化）
+            当前产物（占位渲染，替换成真实可视化）
           </div>
           <pre className="raw">{JSON.stringify(data, null, 2)}</pre>
         </>

@@ -20,6 +20,9 @@ import StatusBar from './StatusBar'
 let seq = 0
 const uid = () => `m${++seq}`
 
+/** 全局对话（不在任何模块里）的 key */
+const GLOBAL_CONV = '__global__'
+
 /** 把一个 SSE 事件合并进指定的 assistant 消息，返回新数组。 */
 function patchMsg(list: Message[], id: string, fn: (m: Message) => Message): Message[] {
   return list.map((m) => (m.id === id ? fn(m) : m))
@@ -57,20 +60,37 @@ function mergeEvent(m: Message, e: SSEEvent): Message {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([])
+  /**
+   * ★ 每个模块一条独立的对话（协作时不会搅在一起）。
+   * key = 模块 id，或 GLOBAL_CONV（不属于任何模块的通用对话）。
+   */
+  const [conversations, setConversations] = useState<Record<string, Message[]>>({
+    [GLOBAL_CONV]: [],
+  })
+  const [activeConvKey, setActiveConvKey] = useState<string>(GLOBAL_CONV)
+
   const [artifact, setArtifact] = useState<Artifact | null>(null)
   const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(true)
+  /** 画布全屏：对话栏收起，画布占满主区。是「视图模式」不是布局重构 */
+  const [canvasFull, setCanvasFull] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [busy, setBusy] = useState(false)
   const [connection, setConnection] = useState<ConnectionState>('connecting')
   const [stats, setStats] = useState<SessionStats>({})
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
+  const messages = conversations[activeConvKey] ?? []
   const messagesRef = useRef<Message[]>([])
-  const abortRef = useRef<AbortController | null>(null)
-
   messagesRef.current = messages
+
+  /** 当前对话的 key —— 发送时捕获它，保证回复写回原来的对话，而不是写到用户已切走的那条 */
+  const convKeyRef = useRef<string>(GLOBAL_CONV)
+  convKeyRef.current = activeConvKey
+
+  const setConv = useCallback((key: string, updater: (prev: Message[]) => Message[]) => {
+    setConversations((prev) => ({ ...prev, [key]: updater(prev[key] ?? []) }))
+  }, [])
 
   /* ── 探测后端，决定走真实流还是 mock ── */
   useEffect(() => {
@@ -88,6 +108,16 @@ export default function App() {
     document.documentElement.dataset.theme = theme
   }, [theme])
 
+  /* ── Esc 退出画布全屏 ── */
+  useEffect(() => {
+    if (!canvasFull) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCanvasFull(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [canvasFull])
+
   /* ── 当前画布上该显示哪个功能 ── */
   const activeFeature: FeatureModule | undefined = useMemo(() => {
     if (activeFeatureId) {
@@ -97,25 +127,35 @@ export default function App() {
     return artifact ? featureByArtifact(artifact.artifactType) : undefined
   }, [activeFeatureId, artifact])
 
+  // 画布上现在展示的是样例数据还是 Agent 真实产出？
+  // 用引用相等判断：真实 artifact 事件带的是新对象，不会等于 preview 常量。
+  const isPreview = useMemo(
+    () => Boolean(artifact && activeFeature?.preview && artifact.data === activeFeature.preview),
+    [artifact, activeFeature],
+  )
+
+  const abortRef = useRef<AbortController | null>(null)
+
   const stop = useCallback(() => {
     abortRef.current?.abort()
     abortRef.current = null
     setBusy(false)
-    setMessages((p) => p.map((m) => (m.streaming ? { ...m, streaming: false } : m)))
-  }, [])
+    setConv(convKeyRef.current, (p) => p.map((m) => (m.streaming ? { ...m, streaming: false } : m)))
+  }, [setConv])
 
   const send = useCallback(
     async (text: string) => {
       const q = text.trim()
       if (!q || busy) return
 
+      const convKey = convKeyRef.current
       const userId = uid()
       const asstId = uid()
       const history: Message[] = [
-        ...messagesRef.current,
+        ...(conversations[convKey] ?? []),
         { id: userId, role: 'user', content: q },
       ]
-      setMessages([...history, { id: asstId, role: 'assistant', content: '', streaming: true }])
+      setConv(convKey, () => [...history, { id: asstId, role: 'assistant', content: '', streaming: true }])
       setBusy(true)
       setStats({})
 
@@ -134,14 +174,14 @@ export default function App() {
           return
         }
         if (e.type === 'done') {
-          setMessages((p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
+          setConv(convKey, (p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
           return
         }
         if (e.type === 'tool_call') activeTool = e.label
         if (e.type === 'tool_result') activeTool = undefined
         if (e.type === 'token') tokenCount += e.text.length
 
-        setMessages((p) => patchMsg(p, asstId, (m) => mergeEvent(m, e)))
+        setConv(convKey, (p) => patchMsg(p, asstId, (m) => mergeEvent(m, e)))
         setStats({
           activeTool,
           elapsedMs: Math.round(performance.now() - t0),
@@ -153,18 +193,13 @@ export default function App() {
         if (connection === 'mock') {
           await streamMock(q, onEvent, ctrl.signal)
         } else {
-          await streamChat({
-            sessionId: 'local',
-            messages: history,
-            onEvent,
-            signal: ctrl.signal,
-          })
+          await streamChat({ sessionId: 'local', messages: history, onEvent, signal: ctrl.signal })
         }
       } catch (err) {
         if (!ctrl.signal.aborted) {
           const message = err instanceof Error ? err.message : String(err)
           onEvent({ type: 'error', message })
-          setMessages((p) =>
+          setConv(convKey, (p) =>
             patchMsg(p, asstId, (m) => ({
               ...m,
               streaming: false,
@@ -175,57 +210,83 @@ export default function App() {
       } finally {
         abortRef.current = null
         setBusy(false)
-        setMessages((p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
+        setConv(convKey, (p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
         setStats((s) => ({ ...s, activeTool: undefined, elapsedMs: Math.round(performance.now() - t0) }))
       }
     },
-    [busy, connection],
+    [busy, connection, conversations, setConv],
   )
 
-  const handlePickFeature = useCallback((f: FeatureModule) => {
-    setActiveFeatureId(f.id)
+  /**
+   * 点模块 = 进入该模块的对话。
+   * ★ 不自动加载 preview —— 可视化要等对话触发，否则会盖住真正的对话意图。
+   *   想看样例数据，画布空态里有个按钮。
+   */
+  const handlePickFeature = useCallback((f: FeatureModule | null) => {
+    if (f) {
+      setActiveFeatureId(f.id)
+      setActiveConvKey(f.id)
+    } else {
+      setActiveFeatureId(null)
+      setActiveConvKey(GLOBAL_CONV)
+    }
     setPanelOpen(true)
-    setArtifact((prev) => {
-      // 当前产物本来就归这个功能管 → 保留，别把真实数据冲掉
-      if (prev && f.artifactTypes.includes(prev.artifactType)) return prev
-      // 否则用该功能的样例数据顶上，让 owner 能立刻看到自己的组件
-      if (f.preview !== undefined && f.artifactTypes.length > 0) {
-        return { artifactType: f.artifactTypes[0], data: f.preview }
-      }
-      return null
-    })
+    // 换模块时清掉画布，让新模块的对话自己产出
+    setArtifact(null)
   }, [])
 
-  // 画布上现在展示的是样例数据还是 Agent 真实产出？
-  // 用引用相等判断：真实 artifact 事件带的是新对象，不会等于 preview 常量。
-  const isPreview = useMemo(
-    () => Boolean(artifact && activeFeature?.preview && artifact.data === activeFeature.preview),
-    [artifact, activeFeature],
-  )
+  /** 手动加载当前模块的样例数据（画布空态里的按钮） */
+  const loadPreview = useCallback(() => {
+    const f = activeFeature
+    if (f && f.preview !== undefined && f.artifactTypes.length > 0) {
+      setArtifact({ artifactType: f.artifactTypes[0], data: f.preview })
+    }
+  }, [activeFeature])
 
-  const noArtifact = !panelOpen
+  /** ★ 整页模式：模块自带了 page 组件，主区整个让给它 */
+  const PageComp = activeFeature?.page
+  const pageMode = Boolean(PageComp)
+
+  // 全屏时画布必须显示，panelOpen 不再参与
+  const noArtifact = !panelOpen && !canvasFull
 
   return (
     <div
       className={[
-        'shell',
-        noArtifact ? 'no-artifact' : '',
-        sidebarOpen ? '' : 'sidebar-collapsed',
-      ]
+          'shell',
+          pageMode ? 'page-mode' : '',
+          !pageMode && noArtifact ? 'no-artifact' : '',
+          canvasFull ? 'canvas-full' : '',
+          sidebarOpen ? '' : 'sidebar-collapsed',
+        ]
         .filter(Boolean)
         .join(' ')}
     >
       <Sidebar
         collapsed={!sidebarOpen}
         features={features}
-        activeId={activeFeature?.id ?? null}
+        activeId={activeConvKey}
         onPick={handlePickFeature}
         connection={connection}
       />
 
       <div className="main">
-        <TopBar
-          title={activeFeature ? activeFeature.title : '材料物理实验教学 Agent'}
+        {PageComp ? (
+          /* ★ 整页模式：模块接管主区。它拿得到 artifact / onSendMessage / onEmitArtifact，
+             所以照样能驱动 Agent —— 只是界面完全由它自己决定。 */
+          <div className="page-slot">
+            <PageComp
+              artifact={artifact}
+              onSendMessage={send}
+              onEmitArtifact={(type, data) => setArtifact({ artifactType: type, data })}
+              messages={messages}
+              busy={busy}
+            />
+          </div>
+        ) : (
+          <>
+            <TopBar
+          title={activeFeature ? activeFeature.title : '全局对话'}
           theme={theme}
           panelOpen={panelOpen}
           sidebarOpen={sidebarOpen}
@@ -238,10 +299,12 @@ export default function App() {
 
         <Composer busy={busy} onSend={send} onStop={stop} />
 
-        <StatusBar connection={connection} stats={stats} messageCount={messages.length} />
+            <StatusBar connection={connection} stats={stats} messageCount={messages.length} />
+          </>
+        )}
       </div>
 
-      {panelOpen && (
+      {!pageMode && (panelOpen || canvasFull) && (
         <ArtifactPanel
           feature={activeFeature}
           artifact={artifact}
@@ -249,6 +312,9 @@ export default function App() {
           onClose={() => setPanelOpen(false)}
           onSendMessage={send}
           onEmitArtifact={(type, data) => setArtifact({ artifactType: type, data })}
+          onLoadPreview={loadPreview}
+          canvasFull={canvasFull}
+          onToggleFullscreen={() => setCanvasFull((v) => !v)}
         />
       )}
     </div>

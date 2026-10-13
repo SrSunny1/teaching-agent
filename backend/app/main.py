@@ -49,7 +49,7 @@ async def root() -> dict:
             "GET /docs": "自动生成的接口文档",
         },
         "model": config.MODEL,
-        "has_key": bool(config.API_KEY),
+        "has_key": config.has_api_key(),
         "tools": sorted(TOOLS),
     }
 
@@ -60,7 +60,7 @@ async def health() -> dict:
     return {
         "ok": True,
         "model": config.MODEL,
-        "has_key": bool(config.API_KEY),
+        "has_key": config.has_api_key(),
         "tools": sorted(TOOLS),
     }
 

@@ -20,7 +20,7 @@
   --r-lg: 14px;
 
   --sidebar-w: 236px;
-  --artifact-w: 440px;
+  --artifact-w: 580px;   /* 3D/图谱需要更宽的画布 */
 
   --dur-fast: 120ms;
   --dur: 200ms;
@@ -154,6 +154,31 @@ textarea {
 }
 .shell.sidebar-collapsed {
   --sidebar-w: 52px;
+}
+
+/* 画布全屏：对话栏收起，画布占满主区（壳的结构不变，只是一个视图模式） */
+.shell.canvas-full {
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+}
+.shell.canvas-full .main {
+  display: none;
+}
+/* 全屏时画布不再需要左边框（左边已经是侧栏） */
+.shell.canvas-full .artifact {
+  border-left: none;
+}
+
+/* ── 整页模式：模块接管主区。壳只保留左栏，右栏画布不渲染 ── */
+.shell.page-mode {
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+}
+/* 模块的整页组件拿到一个撑满、可滚动的容器 */
+.page-slot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
 }
 
 /* ── 侧栏 ── */

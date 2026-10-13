@@ -27,6 +27,30 @@ BASE_URL = os.environ.get("BASE_URL", "https://api.deepseek.com/v1")
 MODEL = os.environ.get("MODEL", "deepseek-chat")
 VISION_MODEL = os.environ.get("VISION_MODEL", MODEL)
 
+
+def looks_like_placeholder(key: str) -> bool:
+    """这个 Key 是不是还没换掉的占位符？
+
+    ★ 为什么需要它：`setup.sh` 会把 .env.example 复制成 .env，里面的 Key 是
+    「sk-xxxxxxxxxxxxxxxx」。如果只判断「字段非空」，它会一路通过 ——
+    前端以为可以真跑，于是切到 live 模式，然后**每条消息都报 401**，
+    而人只会看到「接口报错」，不知道是 Key 没换。
+    """
+    k = (key or "").strip()
+    if not k:
+        return True
+    body = k[3:] if k.lower().startswith("sk-") else k
+    if len(body) < 16:
+        return True  # 太短，不可能是真 Key
+    if len(set(body)) <= 3:
+        return True  # 去掉前缀后几乎全是同一个字符，是占位符
+    return False
+
+
+def has_api_key() -> bool:
+    """能不能真调模型。占位符一律算没有 —— 让前端老老实实退回 mock 模式。"""
+    return not looks_like_placeholder(API_KEY)
+
 RAG_TOP_K = int(os.environ.get("RAG_TOP_K", "4"))
 MAX_TURNS = int(os.environ.get("MAX_TURNS", "6"))
 

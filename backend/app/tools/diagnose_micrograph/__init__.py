@@ -77,8 +77,11 @@ async def _run(args: dict) -> ToolResult:
     if not image:
         return ToolResult(summary="未提供图片", detail="请先上传一张金相或试样表面照片。")
 
-    if not config.API_KEY:
-        return ToolResult(summary="未配置模型", detail="后端没有 API Key，无法做图像诊断。")
+    if not config.has_api_key():
+        return ToolResult(
+            summary="未配置模型",
+            detail="后端没有可用的 API Key，无法做图像诊断。请在 backend/.env 里填入真实 Key 后重启后端。",
+        )
 
     # 允许前端直接传 data URL
     if image.startswith("data:"):
