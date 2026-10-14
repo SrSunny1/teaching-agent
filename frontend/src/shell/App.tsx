@@ -294,6 +294,9 @@ export default function App() {
    *   想看样例数据，画布空态里有个按钮。
    */
   const handlePickFeature = useCallback((f: FeatureModule | null) => {
+    // 这一跳要切到哪个对话。跟 Sidebar 的高亮（activeId={activeConvKey}）用的是同一个值。
+    const nextKey = f ? f.id : GLOBAL_CONV
+
     if (f) {
       setActiveFeatureId(f.id)
       setActiveConvKey(f.id)
@@ -306,9 +309,13 @@ export default function App() {
     //   ⚠️ 代价：没声明 autoOpenCanvas 的模块，作者看自己的 preview 要多点一下顶栏按钮 ——
     //     这一点已写进 README 第一节 / 协作流程 六①。
     setPanelOpen(Boolean(f?.autoOpenCanvas))
-    // 换模块时清掉画布，让新模块的对话自己产出
-    setArtifact(null)
-  }, [])
+    // ★ 只有**真的换了对话**才清画布，让新模块的对话自己产出。
+    //   以前这里是无条件 setArtifact(null)，于是重复点左栏里已经高亮的那一项
+    //   也会把刚产出的结果抹掉 —— 而费曼追问这类对话型模块 autoOpenCanvas 是 false、
+    //   画布本来就不展开，学生「点一下模块想看看结果」看到的是一片空白，像是坏了。
+    //   （其余行为刻意保持不变：比如展示型模块靠这一跳重新展开画布。）
+    if (nextKey !== activeConvKey) setArtifact(null)
+  }, [activeConvKey])
 
   /** 手动加载当前模块的样例数据（画布空态里的按钮） */
   const loadPreview = useCallback(() => {
