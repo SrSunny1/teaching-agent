@@ -182,6 +182,11 @@ async def _run(args: dict) -> ToolResult:
             "coordination": COORDINATION[structure],
             "packing": PACKING[structure],
             "nearestNeighbor": NN[structure],
+            # ★ 原子「恰好相切」时的 r/a。前端那根半径滑杆以它为单位：
+            #   r = tangentRadiusRatio × t，t=1 就是最近邻两球表面刚好接触。
+            #   此时致密度恰为上面的 PACKING[structure]，t 偏离 1 则球体积按 t³ 缩放。
+            #   这是学生最容易背下结论却没见过过程的数（0.74/0.68/0.52 从哪来）。
+            "tangentRadiusRatio": NN[structure] / 2,
         },
     }
 
@@ -190,6 +195,7 @@ async def _run(args: dict) -> ToolResult:
         f"每个晶胞原子数：{ATOMS_PER_CELL[structure]}",
         f"配位数：{COORDINATION[structure]}",
         f"致密度：{PACKING[structure]}",
+        f"原子相切半径：r = {NN[structure] / 2:.4f} a（r 小于此值则最近邻原子之间有空隙）",
     ]
     if payload["stacking"]:
         detail_lines.append(f"密排面堆垛顺序：{payload['stacking']}")

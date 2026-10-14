@@ -14,11 +14,34 @@ interface Payload {
   sites?: Site[]
   cell?: { a: number; b: number; c: number }
   stacking?: string | null
-  params?: { atomsPerCell: number; coordination: number; packing: number; nearestNeighbor: number }
+  params?: {
+    atomsPerCell: number
+    coordination: number
+    packing: number
+    nearestNeighbor: number
+    /** 原子恰好相切时的 r/a（后端算）。半径滑杆以它为单位：t=1 即最近邻正好接触 */
+    tangentRadiusRatio?: number
+  }
 }
 
 const STRUCT_LABEL: Record<string, string> = {
   sc: '简单立方', bcc: '体心立方', fcc: '面心立方', hcp: '密排六方',
+}
+
+/**
+ * 两类原子的图例文案 —— 顺带把「每晶胞原子数是怎么数出来的」摆在明面上。
+ *
+ * 分数是各类原子对**单个晶胞**的贡献（角上被 8 个晶胞共用 → 只算 1/8）。
+ * 各结构加起来正好等于后端给的 atomsPerCell：
+ *   sc  8×1/8 = 1；bcc 8×1/8+1 = 2；fcc 8×1/8+6×1/2 = 4；
+ *   hcp 12×1/6 + 2×1/2 + 3×1 = 6（六方棱柱顶点被 6 个棱柱共用）
+ * HCP 的非顶点原子混了两种分数，所以那一项如实写明，不硬凑成一句。
+ */
+const ATOM_ROLE: Record<string, { corner: string; rest: string }> = {
+  sc: { corner: '角原子 · 1/8', rest: '' },
+  bcc: { corner: '角原子 · 1/8', rest: '体心原子 · 1' },
+  fcc: { corner: '角原子 · 1/8', rest: '面心原子 · 1/2' },
+  hcp: { corner: '棱柱顶点 · 1/6', rest: '底面心 1/2 + 内部 1' },
 }
 type View = 'cell' | 'octahedral' | 'tetrahedral'
 const VIEWS: { id: View; label: string; kind?: string }[] = [
@@ -30,7 +53,31 @@ const VIEWS: { id: View; label: string; kind?: string }[] = [
 const COLORS = {
   atom: '#6b9fff', atomLight: '#b9d2ff', bond: '#7191c5', frame: '#7194ca',
   octa: '#f4bd56', tetra: '#55d6b0', cut: '#6b9fff',
+  // 相切时点亮的那根最近邻键 —— 用近白色，跟原子蓝、间隙黄/绿都不撞
+  anchor: '#eaf1ff',
 }
+
+/** 半径滑杆的三档状态。阈值 0.98 / 1.02 留 2% 容差，避免拖动时在两个标签间跳。 */
+const RADIUS_STATES = {
+  gap: {
+    label: '仍有空隙',
+    border: 'var(--border-soft)', bg: 'transparent', color: 'var(--text-muted)',
+  },
+  tangent: {
+    label: '✅ 恰好相切',
+    border: 'var(--accent-border)', bg: 'var(--accent-soft)', color: 'var(--accent)',
+  },
+  overlap: {
+    label: '⚠️ 原子重叠（物理上不允许）',
+    border: 'var(--err)', bg: 'var(--err-soft)', color: 'var(--err)',
+  },
+} as const
+
+type RadiusState = keyof typeof RADIUS_STATES
+
+/** 滑杆范围：再小原子缩成点看不出结构，再大重叠得太夸张。1.0 落在中间偏右。 */
+const RADIUS_MIN = 0.55
+const RADIUS_MAX = 1.12
 
 function toVec(p: Atom, cell: Payload['cell'] & object, structure?: Payload['structure']): [number, number, number] {
   if (structure === 'hcp') return [p.x * cell.a, p.y * cell.b, p.z - cell.c / 2]
@@ -118,7 +165,10 @@ function Atoms({ atoms, cell, radius, structure, cutaway }: {
       const corner = structure === 'hcp'
         ? Math.abs(Math.hypot(atom.x, atom.y) - 1) < 0.02 && (atom.z < 0.01 || atom.z > cell.c - 0.01)
         : [atom.x, atom.y, atom.z].every((v) => v === 0 || v === 1)
-      const size = radius * (corner ? 0.92 : 1.13)
+      // ★ 不再按角/面区分大小 —— 同一个晶胞里本来就是同一种原子，而且这个模块要展示
+      //   「恰好相切」，球一大一小的话相切在画面上就是假的，教学点就塌了。
+      //   角原子只保留颜色区分（仍能一眼看出被相邻晶胞共享的那一类）。
+      const size = radius
       return <group key={index} position={[x, y, z]}>
         <mesh>
           <sphereGeometry args={[size * 1.18, 28, 22]} />
@@ -141,17 +191,20 @@ function Atoms({ atoms, cell, radius, structure, cutaway }: {
   </group>
 }
 
-function Bonds({ atoms, bonds, cell, radius, structure, cutaway }: {
+function Bonds({ atoms, bonds, cell, radius, structure, cutaway, tangent }: {
   atoms: Atom[]; bonds: [number, number][]; cell: Payload['cell'] & object; radius: number
-  structure?: Payload['structure']; cutaway: boolean
+  structure?: Payload['structure']; cutaway: boolean; tangent: boolean
 }) {
   return <group>
     {bonds.map(([i, j], index) => {
       const a = atoms[i]
       const b = atoms[j]
       if (!a || !b || (cutaway && (!visibleInCut(a, structure) || !visibleInCut(b, structure)))) return null
+      // 相切时点亮第一根最近邻键：它就是「2r = 最近邻距离」那句话的视觉锚点
+      const anchor = tangent && index === 0
       return <Rod key={index} start={toVec(a, cell, structure)} end={toVec(b, cell, structure)}
-        radius={radius * 0.12} color={COLORS.bond} opacity={0.68} />
+        radius={radius * (anchor ? 0.26 : 0.12)}
+        color={anchor ? COLORS.anchor : COLORS.bond} opacity={anchor ? 1 : 0.68} />
     })}
   </group>
 }
@@ -185,12 +238,18 @@ function CutPlane({ cell }: { cell: Payload['cell'] & object }) {
   </mesh>
 }
 
-function CrystalScene({ data, view, cutaway }: { data: Payload; view: View; cutaway: boolean }) {
+function CrystalScene({ data, view, cutaway, radiusScale }: {
+  data: Payload; view: View; cutaway: boolean; radiusScale: number
+}) {
   const cell = data.cell ?? { a: 1, b: 1, c: 1 }
   const atoms = data.atoms ?? []
   const bonds = data.bonds ?? []
   const structure = data.structure
-  const radius = (data.params?.nearestNeighbor ?? 0.7071) * 0.255
+  // ★ radiusScale = 1 时 r = 最近邻距离/2 → 最近邻两球表面恰好接触。
+  //   （旧写法是 nearestNeighbor * 0.255，画的是球棍模型那种「缩小球」，
+  //     球永远碰不到一起，也就没法演示致密度。）
+  const radius = (data.params?.nearestNeighbor ?? 0.7071) / 2 * radiusScale
+  const tangent = Math.abs(radiusScale - 1) <= 0.02
   const activeKind = VIEWS.find((item) => item.id === view)?.kind
   const sites = activeKind ? (data.sites ?? []).filter((site) => site.kind === activeKind) : []
 
@@ -204,7 +263,7 @@ function CrystalScene({ data, view, cutaway }: { data: Payload; view: View; cuta
     <gridHelper args={[3.4, 17, '#355071', '#243448']} position={[0, -0.85, 0]} />
     <CellFrame cell={cell} structure={structure} cutaway={cutaway} />
     {cutaway && <CutPlane cell={cell} />}
-    <Bonds atoms={atoms} bonds={bonds} cell={cell} radius={radius} structure={structure} cutaway={cutaway} />
+    <Bonds atoms={atoms} bonds={bonds} cell={cell} radius={radius} structure={structure} cutaway={cutaway} tangent={tangent} />
     <Atoms atoms={atoms} cell={cell} radius={radius} structure={structure} cutaway={cutaway} />
     {sites.length > 0 && <Sites sites={sites} cell={cell} radius={radius} structure={structure} cutaway={cutaway} />}
     <OrbitControls enableDamping dampingFactor={0.075} minDistance={1.8} maxDistance={8} makeDefault />
@@ -218,11 +277,16 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
   const data = (artifact?.data ?? null) as Payload | null
   const [view, setView] = useState<View>('cell')
   const [cutaway, setCutaway] = useState(false)
+  // ★ 原子半径滑杆。跟 cutaway 一样是**纯视图设置**：只存本地、不发 onEmitArtifact，
+  //   否则拖动时每一帧都在刷整块 artifact（壳那边是整块替换，代价白付）。
+  //   代价是新产物到达时会被 useEffect 重置回 1 —— 与 cutaway 的既有行为一致。
+  const [radiusScale, setRadiusScale] = useState(1)
 
   useEffect(() => {
     const feature = data?.feature
     setView(feature === 'octahedral' || feature === 'tetrahedral' ? feature : 'cell')
     setCutaway(false)
+    setRadiusScale(1)
   }, [data])
 
   const chooseView = (next: View) => {
@@ -236,6 +300,15 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
   const activeKind = VIEWS.find((item) => item.id === view)?.kind
   const siteCount = activeKind ? (data?.sites ?? []).filter((site) => site.kind === activeKind).length : 0
   const hasData = Boolean(data?.atoms?.length)
+
+  // ── 半径滑杆读数 ──
+  // 相切半径 r/a 由后端给；没有就退回「最近邻距离的一半」（几何上等价）。
+  const tangentRatio = params ? (params.tangentRadiusRatio ?? params.nearestNeighbor / 2) : null
+  const radiusNow = tangentRatio != null ? tangentRatio * radiusScale : null
+  // 球体积 ∝ r³，所以致密度随 t³ 缩放。t=1 时正好等于后端给的教材值。
+  const packingNow = params ? params.packing * radiusScale ** 3 : null
+  const radiusState: RadiusState = radiusScale < 0.98 ? 'gap' : radiusScale > 1.02 ? 'overlap' : 'tangent'
+  const st = RADIUS_STATES[radiusState]
 
   return <div className="feat" style={{ height: '100%', minHeight: 0, overflowY: 'auto', padding: 0 }}>
     <div style={{ padding: '16px 16px 12px' }}>
@@ -265,7 +338,7 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
     <div style={{ position: 'relative', height: 'clamp(290px, 47vh, 520px)', margin: '0 10px', overflow: 'hidden', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-soft)', background: 'radial-gradient(ellipse at 52% 43%, #1b2c42 0%, #111b29 52%, #10151f 100%)' }}>
       {!hasData ? <div className="box" style={{ margin: 14 }}>在对话里询问晶胞或间隙结构，Agent 会加载对应的 3D 模型。</div> : (
         <Canvas camera={{ position: [2.45, 1.9, 2.55], fov: 39 }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }}>
-          <CrystalScene data={data!} view={view} cutaway={cutaway} />
+          <CrystalScene data={data!} view={view} cutaway={cutaway} radiusScale={radiusScale} />
         </Canvas>
       )}
       <div style={{ position: 'absolute', left: 12, top: 11, display: 'flex', gap: 6, alignItems: 'center', padding: '5px 8px', border: '1px solid rgba(160,190,230,.15)', borderRadius: 'var(--r-sm)', background: 'rgba(12,19,29,.68)', backdropFilter: 'blur(8px)', color: '#d7e5fa', fontSize: 'var(--fs-xs)' }}>
@@ -281,10 +354,52 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 }}>
         <Metric label="晶胞原子数" value={params?.atomsPerCell ?? '—'} detail="个 / 晶胞" />
         <Metric label="配位数" value={params?.coordination ?? '—'} detail="最近邻原子数" />
-        <Metric label="原子堆积因子" value={params ? `${Math.round(params.packing * 100)}%` : '—'} detail="原子体积分数" />
+        <Metric label="理论堆积因子" value={params ? `${Math.round(params.packing * 100)}%` : '—'} detail="教材值 · 相切时" />
       </div>
+
+      {/* ── 原子半径滑杆 ────────────────────────────────────────────
+          把「致密度 0.74」从一个要背的结论，变成学生自己拖出来的实验：
+          拖到 r 恰好相切，读数才等于教材值；拖过头则原子重叠。 */}
+      {params && radiusNow != null && packingNow != null && (
+        <div style={{
+          marginTop: 9, padding: '10px 12px 11px',
+          border: `1px solid ${st.border}`, borderRadius: 'var(--r-md)', background: st.bg,
+        }}>
+          <div className="kv" style={{ border: 'none', paddingBottom: 0 }}>
+            <span>原子半径</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>r = {radiusNow.toFixed(3)} a</span>
+          </div>
+          <input
+            type="range"
+            min={RADIUS_MIN}
+            max={RADIUS_MAX}
+            step={0.01}
+            value={radiusScale}
+            onChange={(e) => setRadiusScale(Number(e.target.value))}
+            aria-label="原子半径，1.0 表示最近邻原子恰好相切"
+            style={{ width: '100%', accentColor: 'var(--accent)' }}
+          />
+          <div className="kv" style={{ border: 'none', paddingBottom: 0 }}>
+            <span>当前致密度</span>
+            <span style={{ color: st.color, fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>
+              {(packingNow * 100).toFixed(2)}%
+            </span>
+          </div>
+          <div className="kv" style={{ border: 'none' }}>
+            <span>状态</span>
+            <span style={{ color: st.color }}>{st.label}</span>
+          </div>
+          <div style={{ marginTop: 6, color: 'var(--text-faint)', fontSize: 'var(--fs-xs)', lineHeight: 1.55 }}>
+            {radiusState === 'tangent'
+              ? `2r = 最近邻距离 ${params.nearestNeighbor.toFixed(3)} a，相邻原子球面刚好接触 —— 此时致密度正是教材值。`
+              : `拖到 r = ${tangentRatio!.toFixed(3)} a 时原子恰好相切，致密度回到 ${Math.round(params.packing * 100)}%。`}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 12, color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>
-        <Legend color={COLORS.atom} label="晶格原子" />
+        <Legend color={COLORS.atom} label={ATOM_ROLE[structure]?.corner ?? '晶格原子'} />
+        {ATOM_ROLE[structure]?.rest && <Legend color={COLORS.atomLight} label={ATOM_ROLE[structure].rest} />}
         <Legend color={COLORS.bond} label="最近邻键" />
         <Legend color={COLORS.octa} label="八面体间隙" />
         <Legend color={COLORS.tetra} label="四面体间隙" />

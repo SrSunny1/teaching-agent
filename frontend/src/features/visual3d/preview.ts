@@ -94,5 +94,8 @@ export default {
     coordination: 12,
     packing: 0.74,
     nearestNeighbor: 0.7071067811865476,
+    // 恰好相切时的 r/a = √2/4 ≈ 0.3536。半径滑杆以它为单位：t = 1 即最近邻球面相切。
+    // 由后端 load_structure 的 params.tangentRadiusRatio 下发；这里手填是为了预览不依赖后端。
+    tangentRadiusRatio: 0.35355339059327373,
   },
 }

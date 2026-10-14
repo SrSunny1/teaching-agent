@@ -46,23 +46,33 @@
   "sites": [{ "x": 0.5, "y": 0.5, "z": 0.5, "kind": "八面体间隙" }],
   "cell": { "a": 1, "b": 1, "c": 1.633 },
   "stacking": "ABCABC…（密排面 {111}）",
-  "params": { "atomsPerCell": 4, "coordination": 12, "packing": 0.74, "nearestNeighbor": 0.7071 }
+  "params": {
+    "atomsPerCell": 4, "coordination": 12, "packing": 0.74,
+    "nearestNeighbor": 0.7071,
+    "tangentRadiusRatio": 0.3536
+  }
 }
 ```
+
+`tangentRadiusRatio` 是**原子恰好相切时的 r/a**（后端给，= 最近邻距离的一半）。
+半径滑杆以它为单位：`r = tangentRadiusRatio × t`，`t = 1` 时最近邻两球表面刚好接触，
+此时致密度恰好等于 `packing`。前端拖出来的「当前致密度」= `packing × t³`
+（球体积 ∝ r³，乘的是后端已经算好的数，不是在前端做晶体学计算）。
 
 **封闭集合**：`relation` = 前置依赖/因果/对比/组成；`type` = 成分/相/组织/性能/工艺/缺陷。
 **JSON 字段一律 camelCase。**
 
-⚠️ **注意 artifactType 不一致**：后端 `load_structure` 现在返回的是 `artifact_type="structure3d"`，
-和本模块的 `visual3d` 对不上 —— **接手后第一件事就是改它**，否则画布会显示「没有功能认领」。
+✅ `artifact_type` 已经是 `visual3d`，与本模块一致（本条待办已完成，2026-10-14 核实）。
 
 ## 三、当前状态
 
-- ⬜ **前端 `Component.tsx` 是脚手架占位**（把 JSON 打印出来）—— **主要工作量在这里**
+- ✅ **前端 `Component.tsx` 已实现**：可旋转缩放的晶胞、间隙视图、剖视、指标卡、**原子半径滑杆**
 - ⚠️ 后端 `load_structure` **能真算**原子坐标 / 最近邻键 / 间隙位置，但：
-  - `_sites()` 只实现了 `octahedral` / `tetrahedral`
-  - `plane` / `stacking` / `dislocation` 三个 feature **返回空数组**，要补
-  - `artifact_type` 是旧的 `structure3d`，要改成 `visual3d`
+  - `_sites()` 只实现了 `octahedral` / `tetrahedral`；**HCP 的间隙还是 `pass`（返回空）**
+  - `plane` / `stacking` / `dislocation` 三个 feature **还没实现**（`stacking` 只返回一个文字标签，
+    `plane`/`dislocation` 没有任何几何数据），前端 `VIEWS` 也只有三个视图
+  - ⚠️ 前端**没在组件里做晶体学计算**：`packing × t³` 只是球体积随半径的三次方缩放，
+    相切半径 r/a 由后端 `params.tangentRadiusRatio` 下发
 - ⚠️ `load_structure` 顶部注释有个待办：**间隙位置的「个数」要对照教材核一遍**
   （现在给的是几何位置集合，可视化够用，但讲「每个晶胞含几个间隙」必须按教材口径）
 
@@ -77,6 +87,9 @@
 **本模块特有：**
 
 - 左栏点「3D 可视化」→ 能看到**可旋转、可缩放**的 FCC 晶胞
+- **原子半径滑杆**：默认（t=1）最近邻原子**恰好相切**，读数等于教材致密度（FCC 显示 74.00%）；
+  拖小显示「仍有空隙」、致密度下降；拖过 1.0 标红「原子重叠（物理上不允许）」
+- 换成 BCC，同一个滑杆在相切点的致密度应变成 **68%**；SC 是 52%
 - 能切到八面体 / 四面体间隙视图，间隙位置高亮标出
 - 能拆出 (100) (110) (111) 晶面，并在晶面上标出晶向指数
 - 能演示 FCC 的 ABCABC 与 HCP 的 ABAB 堆垛顺序
