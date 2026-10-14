@@ -5,7 +5,7 @@ import preview from './preview'
 
 const feature: FeatureModule = {
   id: 'module4',
-  title: '模块4',
+  title: '金相组织辨析',
   // 这个模块负责渲染哪些 artifactType。后端产出同名类型时就会挂到这块画布。
   // ★ 类型名全局唯一，换名字前先跑 `python scripts/module.py list` 看看有没撞车。
   artifactTypes: ['module4'],
