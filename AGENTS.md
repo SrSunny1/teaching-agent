@@ -103,7 +103,7 @@ export default {
 | `module3` | 模块 3（名字待定） | 【待填】 |
 | `module4` | 模块 4（名字待定） | 【待填】 |
 | `visual3d` | 3D 可视化 | `{structure, feature, atoms:[{x,y,z}], bonds:[[i,j]], sites, cell, stacking, params}` |
-| `feynman` | 费曼追问 | `{concept, rounds:[{question,userAnswer,critique}], score}` |
+| `feynman` | 费曼追问 | `{concept, rounds:[{question,userAnswer,critique,annotated:[{text,kind,note}]}], score, overall, suggestions}` |
 
 > 📌 **这张表是全项目的契约表。** 每个模块的数据形状定下来后，**同步填进来**，
 > 并在群里说一声 —— 前后端都按这张表对字段。
