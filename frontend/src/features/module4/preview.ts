@@ -1,11 +1,1 @@
-/**
- * 模块4 —— 开发预览数据。
- *
- * 在左栏点这个模块时，画布就用这份数据渲染，**不需要后端、不需要 API Key**。
- * 做组件时先改这里，改完存盘浏览器自动刷新，立刻能看到效果。
- */
-export default {
-  // TODO: 换成你这个模块真实的数据形状
-  placeholder: true,
-  note: '模块4 的样例数据，请在 preview.ts 里替换',
-}
+export default { caseId: 'c35' }

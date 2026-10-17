@@ -1,0 +1,35 @@
+import type { Micrograph } from './cases'
+
+// External teaching examples, not the instructor's specimens or model answers.
+export const additionalCases: Micrograph[] = [
+  { id: 'ferritic', title: '铁素体组织 · 晶粒观察', group: '钢组织', file: 'Ferritgefüge.JPG', author: 'Eisenbeisser', license: 'CC BY-SA 3.0', conditions: '来源确认铁素体组织，未确认牌号、含碳量与处理状态。不可据此称为纯铁；外部补充，教材未核对。', question: '怎样区分晶界与第二相？与C35钢的多区域组织相比，有哪些观察差异？' },
+  { id: 'primary-cementite', title: '一次渗碳体 · 针片状形貌', group: '铸铁组织', file: 'Primaerzementit.jpg', author: 'Eisenbeisser', license: 'CC BY-SA 3.0', conditions: '作者标注一次渗碳体针状形貌；基体、具体合金成分和共晶类别未确认。外部补充，教材未核对。', question: '一次渗碳体与珠光体中的渗碳体是否是不同的相？它们的形态和形成顺序有何区别？' },
+  { id: 'ledeburite', title: '低温莱氏体 · 共晶组织', group: '铸铁组织', file: 'Ledeburit2.jpg', author: 'Eisenbeisser', license: 'CC BY-SA 3.0', conditions: '作者标注Ledeburit II（低温莱氏体）。整体试样成分、共晶类别及标定未确认。外部补充，教材未核对。', question: '为什么室温莱氏体不能直接写成奥氏体与渗碳体？它与珠光体是什么关系？' },
+  { id: 'bainite', title: '贝氏体 · 明场TEM', group: '钢组织', file: 'Bainite TEM.jpg', author: 'H K D H Bhadeshia', license: 'CC BY 4.0', conditions: '热处理拓展：合金钢贝氏体的明场透射电镜图，不是光学金相，也不代表普通碳钢。原文成分与处理参数不作为课堂操作依据；教材未涉及。', question: '细长形貌能否单独区分贝氏体和马氏体？还需要哪些转变及成像证据？' },
+  { id: 'martensitic-420', title: '420不锈钢 · 马氏体型', group: '钢组织', file: 'Microstructure of martensitic stainless steel AISI 420.jpg', author: 'Cristiano José Scheuera; Rodrigo Perito Cardosoa; Silvio Francisco Brunattoa', license: 'CC BY 4.0', conditions: '热处理拓展：来源为AISI 420横截面内部，原试样有表面渗碳层，此图未包含该层。不能代替45钢淬火标准图；教材未涉及。', question: '为什么不能凭内部组织照片判断表面渗碳层厚度？与304不锈钢相比应先核对什么？' },
+  { id: 'ferritic-430', title: '430不锈钢 · 热处理态', group: '钢组织', file: 'Microstructure of AISI 430 cooled in air after heating to 950 deg C.jpg', author: 'Sérgio Souto Maior Tavares; Luis Felipe Guimarães de Souza; Tatiane de Campos Chuvas; Cássio Lapate da Costa Machado; Brígida Bastos de Almeida', license: 'CC BY 4.0', conditions: '不锈钢拓展：来源为AISI 430加热后空冷的研究图。原图仅303×204像素，晶界附近存在不同形貌区域，不作为纯铁素体标准图；教材未涉及。', question: '“铁素体型不锈钢”是否意味着任意处理后都只有铁素体？怎样避免只凭牌号判断组织？' },
+  { id: 'duplex', title: '双相不锈钢 · 铁素体与奥氏体', group: '钢组织', file: 'Microstructure of duplex stainless steel S32205.jpg', author: 'Tiago Felipe de Abreu Santosa; Edwar Andrés Torres Lópezd; Eduardo Bertoni da Fonsecaa; Antonio Jose Ramireza; Commons上传者裁切', license: 'CC BY 4.0', conditions: '不锈钢拓展：S32205，来源图保留α、γ标注及标尺。采用Commons已有裁切版本，本项目未再修改；教材未涉及。', question: '两相与两种颜色有什么区别？为什么不能把本图的亮暗对应套用到所有金相图？' },
+  { id: 'copper-dendrite', title: '铜 · 枝晶形貌', group: '有色合金', file: 'Микроструктура меди 2 (microstructure of copper).jpg', author: 'Andrew Egorov', license: 'CC BY-SA 4.0', conditions: '凝固组织拓展：作者描述为枝晶形态的铜，未给出纯度、制备或冷却记录。不是再结晶铜标准图；教材未涉及。', question: '枝晶的主干、分支与等轴晶粒轮廓如何区分？仅凭树枝形能否判断材料成分？' },
+  { id: 'tin-bronze', title: '锡青铜 · 凝固形貌', group: '有色合金', file: 'Britannica Alloys Plate Figure 01.jpg', author: 'Heycock and Neville, Philosophical Transactions; Encyclopaedia Britannica (1911)', license: 'Public domain', conditions: '铜合金拓展：历史锡铜合金显微照片，仅280×176像素，只作粗大形貌示例，不用于细节识别或测量。非本校试样；教材未涉及。', question: '青铜是否就是黄铜？为何这张历史图不能支持精细层片和晶粒尺寸判断？' },
+  { id: 'al-bronze', title: '铝青铜 · 铜铝合金', group: '有色合金', file: 'AlubronzeCuAl20v500.png', extension: 'png', author: 'Eisenbeisser; Unibond（Commons版本调整）', license: 'CC BY-SA 3.0', conditions: '铜合金拓展：作者标注铝青铜及腐蚀条件；这是铜基合金，不是铝基合金。未核对各区域相组成及课堂对应试样；教材未涉及。', question: '铝青铜和铝硅合金的基体金属分别是什么？形态相近能否说明相组成相同？' },
+]
+
+export const teachingSources = {
+  equilibrium: { title: '南京工业大学 · 铁碳合金平衡组织观察', url: 'https://clsy.njtech.edu.cn/__local/B/FB/8F/E021E79BD2E0611BB502C060ACF_F7223847_14FF2.pdf?e=.pdf', section: '基本组织、一次渗碳体与莱氏体；图片并非该校实验照片' },
+  corrosion: { title: '南京工业大学 · 常用耐腐蚀金属材料的显微组织分析', url: 'https://clsy.njtech.edu.cn/__local/7/90/0C/E0C3A41A4B94A3E58705E2E8DFC_936063F0_13011.pdf?e=.pdf', section: '实验操作步骤：铁素体、奥氏体与双相不锈钢；具体牌号图为外部补充' },
+  nonferrous: { title: '燕山大学 · 有色合金的显微组织观察', url: 'https://clsfzx.ysu.edu.cn/wlzy1/syzds/jsclgczy/jsxyrclII/ysjscldxwzz/gs.htm', section: '铜合金概述提及锡青铜和铝青铜；并未确认二者为该实验实际试样' },
+  solidification: { title: '西北工业大学 · 材料科学基础实验大纲', url: 'https://cailiaosyjx.nwpu.edu.cn/info/1012/1132.htm', section: '二元合金不平衡组织分析及课程耗材中的铜；不等于确认该铜枝晶照片的制备方法' },
+}
+
+export const additionalDetails: Record<string, { morphology: string; distribution: string; inspect: string; missing: string; fact: string; teaching: keyof typeof teachingSources | 'steel' | 'stainless' }> = {
+  ferritic: { morphology: '区分多边形晶粒轮廓、晶界和局部深色点，不能把晶界当成一层独立的第二相。', distribution: '记录晶粒形状的差异与边界连接，比较多个区域是否一致。', inspect: '与C35钢比较时，关注晶粒轮廓和组织区域两个不同层级。', missing: '来源未给牌号及纯度，不能把铁素体组织直接称作纯铁。', fact: '铁素体是相的名称；相同相可构成不同取向的多个晶粒。晶界不是凭颜色定义的第二相。', teaching: 'equilibrium' },
+  'primary-cementite': { morphology: '观察长针片状轮廓、端部与相交关系，区别于细密层片和沿晶界网络。', distribution: '分别记录粗大片状区域及周围基体，不由最亮处推定全部组成。', inspect: '对照珠光体中的渗碳体，先区别形成顺序与形态，再讨论相名称。', missing: '作者只确认一次渗碳体形貌，不能从图补写含碳量、牌号或全部基体组成。', fact: '一次渗碳体直接从液相形成；与珠光体中的渗碳体同为渗碳体，但形成过程和形态不同。', teaching: 'equilibrium' },
+  ledeburite: { morphology: '观察不同形态区域相互穿插的关系，不把整块共晶组织当成单一相。', distribution: '比较不同方向的细长、岛状区域；截面会影响表观轮廓。', inspect: '先注明低温莱氏体，再将共晶形成与后续共析转变分开解释。', missing: '未确认试样整体成分与区域标注，不能判断整个试样是否恰为共晶成分。', fact: '高温莱氏体由奥氏体与渗碳体构成；冷却发生共析转变后，低温莱氏体通常由珠光体和渗碳体构成。', teaching: 'equilibrium' },
+  bainite: { morphology: '观察细长板条的方向及邻接关系，不把所有针状组织都叫作马氏体。', distribution: '记录成束与交错特征，避免把明场衬度当作统一的相颜色标记。', inspect: '先注明TEM与合金钢，再核对原始转变记录；本例不直接区分上、下贝氏体。', missing: '普通光学图与TEM分辨率不同；不能由本图推广普通碳钢热处理参数。', fact: '贝氏体与马氏体都可能呈细长形貌，单靠外形不足以区分；需结合转变条件和内部结构。', teaching: 'steel' },
+  'martensitic-420': { morphology: '描述晶内细密方向性纹理与边界，不用一条针状线判定整幅图。', distribution: '关注内部视场的区域差异，不把内部照片当作表面层剖面。', inspect: '先确认420与304是不同材料，再讨论处理状态与组织差别。', missing: '照片没有呈现表面渗碳层，不能测层深或认定表面与内部组织相同。', fact: 'AISI 420属于马氏体型不锈钢；该图来源取自试样内部，不能代表已被裁去的表面渗碳层。', teaching: 'stainless' },
+  'ferritic-430': { morphology: '区分较大晶粒的边界与晶界附近的复杂区域，保留不同组织并存的可能。', distribution: '对照晶内和边界附近的纹理，不将全部视场简化为单相。', inspect: '材料分类不等于该处理态的全部相组成；需要原论文与制备记录辅助。', missing: '原图分辨率较低，不能放大后虚构细节，也不能仅凭430牌号定所有区域的相。', fact: '430为铁素体型不锈钢，但材料类别不能替代具体热处理态的组织分析。本图不是纯铁素体标准样。', teaching: 'corrosion' },
+  duplex: { morphology: '参照原图α、γ标注，分别描述两类区域的轮廓和拉长特征。', distribution: '观察两相的连续性与穿插，不默认两相各占一半。', inspect: '原图标注支持α铁素体与γ奥氏体的对应；与304比较时区分单类材料名和具体相分布。', missing: '没有完成多视场统计，不能给出两相体积分数或耐蚀性数值。', fact: '双相不锈钢主要含铁素体与奥氏体；双相不意味着两相必定等量，也不是所有明暗相间组织的通称。', teaching: 'corrosion' },
+  'copper-dendrite': { morphology: '辨认主干与分支的树枝状形貌，区别于退火后的等轴晶粒。', distribution: '描述不同分支的方向与相邻关系，不把每根枝臂当作独立晶粒。', inspect: '枝晶是形貌，不是独立的相名称；先核对材料标签再讨论形成条件。', missing: '缺少纯度与制备记录，不据图确定冷速、成分偏析量或工艺。', fact: '来源确认铜的枝晶形貌；枝晶描述生长形态，不能仅凭树枝形确定合金成分。', teaching: 'solidification' },
+  'tin-bronze': { morphology: '只观察粗大区域的轮廓和明暗对比，不判读原图未分辨出的精细组织。', distribution: '记录区域是否连续、分支或聚集，避免对模糊边缘作精确计数。', inspect: '先区分锡青铜的铜锡体系与黄铜的铜锌体系；本图是历史材料示例。', missing: '历史图分辨率低，不作为晶粒尺寸、相比例或细层片测量依据。', fact: '锡青铜以铜锡体系为基础，与铜锌体系的黄铜不同；不能把黄铜的相组成说明直接套用。', teaching: 'nonferrous' },
+  'al-bronze': { morphology: '描述不同区域的轮廓、纹理与边界，不套用铝硅合金的硅相形态标签。', distribution: '比较各区域的连续性与分布，再提出需要相图验证的假设。', inspect: '铝青铜是铜基铜铝合金；铝硅合金是铝基材料，名称都含铝不代表基体相同。', missing: '各区域相组成未核对，不能自动标注α相、共析体或金属间化合物。', fact: '铝青铜属于铜合金，而非铝基合金；合金体系不同，即使图像形态相似也不能共用相名。', teaching: 'nonferrous' },
+}
