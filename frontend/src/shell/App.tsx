@@ -88,6 +88,8 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [busy, setBusy] = useState(false)
   const [connection, setConnection] = useState<ConnectionState>('connecting')
+  /** 后端实际在用的模型名，给顶栏展示。空字符串 = 还没探测到 */
+  const [modelName, setModelName] = useState('')
   const [stats, setStats] = useState<SessionStats>({})
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
@@ -106,8 +108,12 @@ export default function App() {
   /* ── 探测后端，决定走真实流还是 mock ── */
   useEffect(() => {
     let alive = true
-    probeBackend().then(({ ok, hasKey }) => {
-      if (alive) setConnection(ok && hasKey ? 'live' : 'mock')
+    probeBackend().then(({ ok, hasKey, model }) => {
+      if (!alive) return
+      setConnection(ok && hasKey ? 'live' : 'mock')
+      // 顶栏芯片显示后端**实际**用的模型 —— 以前这里是写死的字符串，
+      // 换了 .env 界面始终显示旧名字，看起来像配置没生效。
+      setModelName(model ?? '')
     })
     return () => {
       alive = false
@@ -191,9 +197,10 @@ export default function App() {
   }, [setConv])
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, image?: string) => {
       const q = text.trim()
-      if (!q || busy) return
+      // 只发一张图、不打字也是合法的（「这张金相有什么缺陷？」可以省略）
+      if ((!q && !image) || busy) return
 
       const convKey = convKeyRef.current
 
@@ -212,7 +219,7 @@ export default function App() {
       const asstId = uid()
       const history: Message[] = [
         ...(conversations[convKey] ?? []),
-        { id: userId, role: 'user', content: q },
+        { id: userId, role: 'user', content: q, image },
       ]
       setConv(convKey, () => [...history, { id: asstId, role: 'assistant', content: '', streaming: true }])
       setBusy(true)
@@ -371,6 +378,7 @@ export default function App() {
             <TopBar
           title={activeFeature ? activeFeature.title : '全局对话'}
           theme={theme}
+          model={modelName}
           panelOpen={panelOpen}
           sidebarOpen={sidebarOpen}
           onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}

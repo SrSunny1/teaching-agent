@@ -124,10 +124,32 @@ async def run_chat(
         return
 
     client = AsyncOpenAI(api_key=config.API_KEY, base_url=config.BASE_URL)
-    convo: list[dict[str, Any]] = [
-        {"role": "system", "content": _system_prompt(feature)},
-        *history,
-    ]
+
+    # ★ 图片链路：前端把图片（data URL）挂在最后一条 user 消息的 image 上。
+    #   聊天模型是**纯文本**的 —— 所以这里分两件事做：
+    #     ① 交给模型的 messages 只保留 role/content。直接把 image 塞进去会被 API 拒掉；
+    #     ② 提示模型「这一轮带了图」，否则它不知道有图，根本不会去调诊断工具；
+    #     ③ 图片本身单独拎出来，等它真的调用 diagnose_micrograph 时再填进工具参数
+    #        （见下面 attached_image 那段，和 _requested_structure 是同一个套路）。
+    attached_image = next(
+        (
+            str(msg["image"])
+            for msg in reversed(history)
+            if msg.get("role") == "user" and msg.get("image")
+        ),
+        "",
+    )
+
+    convo: list[dict[str, Any]] = [{"role": "system", "content": _system_prompt(feature)}]
+    for index, msg in enumerate(history):
+        content = msg.get("content") or ""
+        if attached_image and index == len(history) - 1:
+            content += (
+                "\n\n（本次消息附带了一张图片。涉及金相组织、试样表面等图像内容的问题，"
+                "请调用 diagnose_micrograph；图片由系统随请求提供，不需要再向用户索要。）"
+            )
+        convo.append({"role": msg.get("role", "user"), "content": content})
+
     tool_specs = specs()
 
     try:
@@ -191,6 +213,20 @@ async def run_chat(
                 if isinstance(args, dict):
                     args["structure"] = requested_structure
                     slot["args"] = json.dumps(args, ensure_ascii=False)
+
+            # 图片同理：模型看不到图，但它能决定「调诊断工具」。图片是前端带上来的，
+            # 这里替它填进工具参数 —— 模型既不需要、也不可能自己生成这串 base64。
+            if attached_image:
+                for slot in ordered:
+                    if slot["name"] != "diagnose_micrograph":
+                        continue
+                    try:
+                        args = json.loads(slot["args"] or "{}")
+                    except json.JSONDecodeError:
+                        args = {}
+                    if isinstance(args, dict):
+                        args["image"] = attached_image
+                        slot["args"] = json.dumps(args, ensure_ascii=False)
 
             # 把 assistant 这一轮的 tool_calls 记进上下文，否则下一轮模型不知道发生过什么
             convo.append(

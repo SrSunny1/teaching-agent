@@ -52,7 +52,13 @@ export async function streamChat(opts: StreamOptions): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       session_id: opts.sessionId,
-      messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
+      // ★ 只带 role/content/image —— 本地消息里的 thinking、tools 等是给人看的，
+      //   发给模型既没意义也浪费 token。image 只在真的附了图时才出现。
+      messages: opts.messages.map((m) =>
+        m.image
+          ? { role: m.role, content: m.content, image: m.image }
+          : { role: m.role, content: m.content },
+      ),
       feature: opts.feature ?? null,
     }),
     signal: opts.signal,
@@ -90,6 +96,12 @@ export interface ProbeResult {
   ok: boolean
   /** 后端是否配了 API Key */
   hasKey: boolean
+  /**
+   * 后端**实际**在用的模型名（`/health` 报的 `model`）。
+   * ★ 顶栏那个芯片必须用它，别写死 —— 写死之后换模型界面永远不跟着变，
+   *   看上去就像「配置没生效」，实际只是牌子没换。
+   */
+  model?: string
 }
 
 /**
@@ -104,8 +116,12 @@ export async function probeBackend(timeoutMs = 1500): Promise<ProbeResult> {
     const res = await fetch('/api/health', { signal: ctrl.signal })
     clearTimeout(t)
     if (!res.ok) return { ok: false, hasKey: false }
-    const data = (await res.json()) as { has_key?: boolean }
-    return { ok: true, hasKey: Boolean(data?.has_key) }
+    const data = (await res.json()) as { has_key?: boolean; model?: string }
+    return {
+      ok: true,
+      hasKey: Boolean(data?.has_key),
+      model: typeof data?.model === 'string' ? data.model : undefined,
+    }
   } catch {
     return { ok: false, hasKey: false }
   }

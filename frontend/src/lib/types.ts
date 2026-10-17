@@ -26,6 +26,12 @@ export interface Message {
   role: Role
   /** 正文（Markdown） */
   content: string
+  /**
+   * 用户附带的图片（data URL）。目前只有 user 消息会带。
+   * ★ 它**不会**直接给聊天模型看（模型是纯文本的）：`sse.ts` 把它随请求发到后端，
+   *   `chat.py` 再把它填进 `diagnose_micrograph` 的工具参数。见那边的注释。
+   */
+  image?: string
   /** 思考过程，默认收起。仅 assistant 有 */
   thinking?: string
   /** 本条消息触发的工具调用，按序展示 */

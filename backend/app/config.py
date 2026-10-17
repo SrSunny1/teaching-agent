@@ -24,7 +24,10 @@ _load_env()
 
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 BASE_URL = os.environ.get("BASE_URL", "https://api.deepseek.com/v1")
-MODEL = os.environ.get("MODEL", "deepseek-chat")
+# ★ 兜底默认值必须跟 .env.example 一致。DeepSeek 现在只提供
+#   deepseek-flash（支持图片）和 deepseek-v4-pro（纯文本），deepseek-chat 已经下线。
+#   不改这里的话，队友跑 setup.sh（它会把 .env.example 复制成 .env）拿到旧名字就会 400。
+MODEL = os.environ.get("MODEL", "deepseek-flash")
 VISION_MODEL = os.environ.get("VISION_MODEL", MODEL)
 
 

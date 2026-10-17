@@ -3,6 +3,8 @@ import { IconMoon, IconPanel, IconSun } from './icons'
 interface Props {
   title: string
   theme: 'dark' | 'light'
+  /** 后端实际在用的模型名。空串 = 还没探测到（后端没起来） */
+  model?: string
   panelOpen: boolean
   sidebarOpen: boolean
   onToggleTheme: () => void
@@ -13,6 +15,7 @@ interface Props {
 export default function TopBar({
   title,
   theme,
+  model,
   panelOpen,
   onToggleTheme,
   onTogglePanel,
@@ -28,8 +31,8 @@ export default function TopBar({
       </div>
 
       <div className="topbar-actions">
-        <span className="chip mono" title="模型由环境变量 MODEL 配置">
-          deepseek-chat
+        <span className="chip mono" title="模型由 backend/.env 的 MODEL 配置；这里显示的是后端当前实际在用的那个">
+          {model || '—'}
         </span>
         <button className="icon-btn" onClick={onToggleTheme} title="切换主题">
           {theme === 'dark' ? <IconMoon /> : <IconSun />}

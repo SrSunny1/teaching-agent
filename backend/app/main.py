@@ -25,6 +25,9 @@ app.add_middleware(
 class ChatMessage(BaseModel):
     role: str
     content: str
+    # 用户上传的图片（data URL）。聊天模型是纯文本的、看不见它 ——
+    # chat.py 会把它填进 diagnose_micrograph 的工具参数，见那里的注释。
+    image: str | None = None
 
 
 class FeatureContext(BaseModel):

@@ -144,7 +144,22 @@ export default function ChatStream({ messages }: { messages: Message[] }) {
         {messages.map((m) =>
           m.role === 'user' ? (
             <div className="msg msg-user" key={m.id}>
-              <div className="bubble">{m.content}</div>
+              <div className="bubble">
+                {m.image && (
+                  <img
+                    src={m.image}
+                    alt="你上传的图片"
+                    style={{
+                      display: 'block',
+                      maxWidth: 220,
+                      maxHeight: 180,
+                      borderRadius: 'var(--r-sm)',
+                      marginBottom: m.content ? 6 : 0,
+                    }}
+                  />
+                )}
+                {m.content}
+              </div>
             </div>
           ) : (
             <AssistantMessage key={m.id} m={m} />

@@ -193,7 +193,10 @@ TOOL = Tool(
                 "description": "图片的 base64、data URL 或可访问的 URL",
             },
         },
-        "required": ["image"],
+        # ★ 刻意**不**把 image 放进 required：图片是前端上传后由 chat.py 注入到工具参数里的
+        #   （见 chat.py 的 attached_image），模型既看不到图、也产不出那串 base64。
+        #   强制必填只会让它瞎编一个值，或者干脆不敢调这个工具。
+        "required": [],
     },
     run=_run,
 )
