@@ -52,14 +52,6 @@ const VIEWS: { id: View; label: string; kind?: string }[] = [
   { id: 'all', label: '全部间隙', kind: 'all' },
 ]
 
-/** 结构切换器：点一下让 Agent 重新加载对应结构（不在前端做晶体学计算）。 */
-const STRUCTURES: { id: NonNullable<Payload['structure']>; label: string; name: string }[] = [
-  { id: 'fcc', label: 'FCC', name: '面心立方' },
-  { id: 'bcc', label: 'BCC', name: '体心立方' },
-  { id: 'hcp', label: 'HCP', name: '密排六方' },
-  { id: 'sc', label: 'SC', name: '简单立方' },
-]
-
 const COLORS = {
   atom: '#6b9fff', atomLight: '#b9d2ff', bond: '#7191c5', frame: '#7194ca',
   octa: '#f4bd56', tetra: '#55d6b0', cut: '#6b9fff',
@@ -451,17 +443,6 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
           style={cutaway ? { color: 'var(--accent)', background: 'var(--accent-soft)', borderColor: 'var(--accent-border)' } : undefined}>
           {cutaway ? '剖视已开启' : '剖视内部'}
         </button>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>结构</span>
-        {STRUCTURES.map((item) => (
-          <button key={item.id} className="chip" disabled={structure === item.id}
-            onClick={() => onSendMessage(`请加载${item.name}（${item.label}）晶胞结构`)}
-            style={structure === item.id ? { color: 'var(--accent)', background: 'var(--accent-soft)', borderColor: 'var(--accent-border)' } : undefined}>
-            {item.label}
-          </button>
-        ))}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
