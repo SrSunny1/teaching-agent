@@ -7,9 +7,11 @@
 # 真正能发现越界的是 scripts/check-boundaries.py —— 但它也要**手动跑**，而且**只报不拦**。
 # 结论：边界靠自觉 —— 改别人模块之前，先在群里说一声。
 #
-# 当前状态（2026-10-13）：
-#   - 6 个模块：模块 1~4（名字待定）+ 已定名的 visual3d / feynman
-#   - 原模块 5、6 已删除（负责人 C 暂无模块，等重新分配）
+# 当前状态（2026-10-20）：
+#   - 7 个模块：module1 / module2（名字待定）+ 已定名的 mistakeBook / module4 /
+#     visual3d / feynman / knowledgeBase
+#   - 原模块 3 已由 mistakeBook（材料科学错题集）取代；原模块 5、6 已删除
+#   - pageDemo 已移到 frontend/src/reference/pageDemo/，不再注册到左栏
 #   - 框架（壳）由 SrSunny1 独占，他同时负责 visual3d / feynman
 #   - @A @B 是代号，尚未对应到真实 GitHub 用户名
 #
@@ -35,15 +37,16 @@
 /frontend/src/features/feynman/         @SrSunny1
 #   feynman 的后端工具还没建。建好后在下面补一行。
 
-# ─────────── 模块 1~4 —— 待分配，暂用代号 ───────────
+# ─────────── 模块 1~2 与插件 ───────────
 
 # A
 /frontend/src/features/module1/       @A
 /frontend/src/features/module2/       @A
 
-# B
-/frontend/src/features/module3/       @B
+# B / 周星宇
+/frontend/src/features/mistakeBook/   @B
 /frontend/src/features/module4/       @B
+/frontend/src/features/knowledgeBase/ @B
 
 # 注：C 暂无模块（原模块 5、6 已删除）。重新分配时在本文件加回来。
 

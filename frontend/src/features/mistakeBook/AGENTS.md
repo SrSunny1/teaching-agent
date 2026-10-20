@@ -10,7 +10,7 @@
 | artifactType | `mistakeBook` |
 | 前端 | `frontend/src/features/mistakeBook/`（**画布模式**，与费曼追问、3D 可视化同位阶） |
 | 后端工具 | **`backend/app/tools/mistake_book/`**（已建，含 16 条错题库） |
-| 左栏顺序 | 91 |
+| 左栏顺序 | 30 |
 | 模块身份 `persona` | **已填**（见 `index.ts`） |
 | 主题 | 主智能体白色基调 + 模块内部**可配置主题色**（默认墨金，调试面板可换） |
 

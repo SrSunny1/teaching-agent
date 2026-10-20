@@ -26,7 +26,7 @@ const STYLE = `
 
 /**
  * 画布版：知识库的说明与快捷入口。
- * 完整界面（总览/文献库/智能问答/设置）在左栏「构建你的知识库」整页里 1:1 内嵌。
+ * 完整界面（总览/文献库/智能问答/设置）在左栏「知识库」整页里 1:1 内嵌。
  */
 export function Component({ onSendMessage }: FeatureProps) {
   // 禁用时画布显示「已禁用」卡片，左栏入口保留，可一键启用
@@ -38,7 +38,7 @@ export function Component({ onSendMessage }: FeatureProps) {
         <style>{STYLE}</style>
         <div className="kbc-card" style={{ textAlign: 'center' }}>
           <h3>插件已禁用</h3>
-          <p>「构建你的知识库」当前处于关闭状态。</p>
+          <p>「知识库」当前处于关闭状态。</p>
           <div className="kbc-row" style={{ justifyContent: 'center' }}>
             <button
               className="kbc-btn"
@@ -65,7 +65,7 @@ export function Component({ onSendMessage }: FeatureProps) {
 
       <div className="kbc-card">
         <h3>完整界面在整页模式</h3>
-        <p>总览、文献库、智能问答、设置四个页面全部由原系统提供，点击左栏「构建你的知识库」即可进入。</p>
+        <p>总览、文献库、智能问答、设置四个页面全部由原系统提供，点击左栏「知识库」即可进入。</p>
         <p>
           服务未启动时：双击 <code>材料科学RAG系统/启动.bat</code> 或在该目录执行 <code>python start.py</code>。
         </p>

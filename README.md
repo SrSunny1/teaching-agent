@@ -132,20 +132,21 @@ cd backend && python tests/retrieval_probe.py
 
 左栏顺序由各 `index.ts` 的 `order` 字段控制。
 
-**当前 6 个模块：**`visual3d` / `feynman` 已定名并由 SrSunny1 负责；模块 1~4 是编号占位，名字待定。
-（原模块 5、6 已删除。）
+**当前 7 个模块：** `module1` / `module2` 仍是编号占位；`mistakeBook`、`module4`、`visual3d`、`feynman`、`knowledgeBase` 已定名。
+（原模块 3 已由「材料科学错题集」取代；原模块 5、6 已删除；`pageDemo` 已移到 `src/reference/pageDemo/`，不再注册到左栏。）
 
 | # | 模块 | artifactType | 前端 | 负责人 |
 |---|---|---|---|---|
 | 1 | 模块 1（名字待定） | `module1` | `features/module1/` | A |
 | 2 | 模块 2（名字待定） | `module2` | `features/module2/` | A |
-| 3 | 模块 3（名字待定） | `module3` | `features/module3/` | B |
-| 4 | 模块 4（名字待定） | `module4` | `features/module4/` | B |
+| 3 | **材料科学错题集** | `mistakeBook` | `features/mistakeBook/` | 周星宇（B） |
+| 4 | **金相组织辨析** | `module4` | `features/module4/` | B |
 | — | **3D 可视化** | `visual3d` | `features/visual3d/` | **SrSunny1** |
 | — | **费曼追问** | `feynman` | `features/feynman/` | **SrSunny1** |
+| — | **知识库** | `knowledgeBase` | `features/knowledgeBase/` | 周星宇 |
 | — | **框架（壳）** | — | `src/shell/`、`src/lib/` | **SrSunny1** |
 
-> 📌 **名字定了之后要改三处**：各 `features/<名>/AGENTS.md` 的「模块名」行、
+> 📌 **模块 1、2 定名之后要改三处**：各 `features/<名>/AGENTS.md` 的「模块名」行、
 > `CODEOWNERS` 的路径、根 `AGENTS.md` 的任务书索引表。
 > 用 `python scripts/module.py list` 随时核对当前状态。
 
@@ -155,6 +156,7 @@ cd backend && python tests/retrieval_probe.py
 
 > **参考实现**：热处理工艺沙盒在 `frontend/src/reference/heatTreatment/`（重构前的版本），
 > 是全项目的组件样板 —— 抄它的结构，但不需要恢复它。
+> 整页模式的最小骨架在 `frontend/src/reference/pageDemo/`，同样不注册到左栏。
 
 ---
 
@@ -220,7 +222,10 @@ export default {
 |---|---|---|
 | `visual3d` | 3D 可视化 | `{structure, feature, atoms: [{x,y,z}], bonds: [[i,j]], sites, cell, stacking, params}` |
 | `feynman` | 费曼追问 | `{concept, rounds: [{question, userAnswer, critique}], score}` |
-| `module1`~`module4` | 模块 1~4（名字待定） | 【待填 —— 在各任务书的「数据形状」一节写】 |
+| `mistakeBook` | 材料科学错题集 | 见 `frontend/src/features/mistakeBook/AGENTS.md` |
+| `module4` | 金相组织辨析 | 见 `frontend/src/features/module4/` 的 `caseId` 等字段 |
+| `knowledgeBase` | 知识库 | 画布预览用元信息；整页由原 RAG 系统提供 |
+| `module1` / `module2` | 模块 1/2（名字待定） | 【待填 —— 在各任务书的「数据形状」一节写】 |
 
 ### SSE 事件（只有 7 种，不许私自加第 8 种）
 

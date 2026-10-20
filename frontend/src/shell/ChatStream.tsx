@@ -11,7 +11,6 @@ const EXAMPLES = [
   { t: '250 目筛分的作用是什么？', d: '知识库问答 + 溯源' },
   { t: '45 钢淬火后为什么要回火？', d: '触发热处理沙盒' },
   { t: '面心立方晶胞有多少个原子？', d: '加载 3D 晶体结构' },
-  { t: '千分表读数不对怎么办？', d: '仪器故障排查' },
 ]
 
 function Markdown({ children }: { children: string }) {
@@ -66,7 +65,10 @@ function AssistantMessage({ m }: { m: Message }) {
   )
 }
 
-export default function ChatStream({ messages }: { messages: Message[] }) {
+export default function ChatStream({ messages, onSend }: {
+  messages: Message[]
+  onSend: (text: string) => void
+}) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
   const lastUserMessageRef = useRef<string | undefined>(undefined)
@@ -111,7 +113,7 @@ export default function ChatStream({ messages }: { messages: Message[] }) {
               材料物理实验教学 Agent
             </div>
             <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
-              知识范围：《材料科学基础》实验教材 7 个实验 + 劳动教育四大模块
+              知识范围：教材 7 个实验 + 材料物理专业实验1/2 讲义/大纲 + 劳动教育四大模块
             </div>
           </div>
 
@@ -123,14 +125,23 @@ export default function ChatStream({ messages }: { messages: Message[] }) {
             }}
           >
             {EXAMPLES.map((e) => (
-              <div
+              <button
                 key={e.t}
+                type="button"
                 className="tool-card"
-                style={{ padding: '11px 13px', cursor: 'default' }}
+                onClick={() => onSend(e.t)}
+                style={{
+                  padding: '11px 13px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  color: 'inherit',
+                  font: 'inherit',
+                  width: '100%',
+                }}
               >
                 <div style={{ marginBottom: 3 }}>{e.t}</div>
                 <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-faint)' }}>{e.d}</div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

@@ -20,14 +20,16 @@
 |---|---|---|---|
 | 1 | 模块 1（待定） | `frontend/src/features/module1/AGENTS.md` | A |
 | 2 | 模块 2（待定） | `frontend/src/features/module2/AGENTS.md` | A |
-| 3 | 模块 3（待定） | `frontend/src/features/module3/AGENTS.md` | B |
-| 4 | 模块 4（待定） | `frontend/src/features/module4/AGENTS.md` | B |
+| 3 | **材料科学错题集** | `frontend/src/features/mistakeBook/AGENTS.md` | **周星宇（B）** |
+| 4 | **金相组织辨析** | `frontend/src/features/module4/AGENTS.md` | B |
 | **7** | **3D 可视化** | `frontend/src/features/visual3d/AGENTS.md` | **SrSunny1** |
 | **8** | **费曼追问** | `frontend/src/features/feynman/AGENTS.md` | **SrSunny1** |
+| **9** | **知识库** | `frontend/src/features/knowledgeBase/AGENTS.md` | **周星宇** |
 
-> 📌 **visual3d / feynman 已定名**，**模块 1~4 仍是编号占位，名字待定。**
-> （原模块 5、6 已删除，负责人 C 暂无模块）
-> 名字定了之后，改三处：各任务书的「模块名」行、`CODEOWNERS` 的路径、本表。
+> 📌 **mistakeBook / knowledgeBase / visual3d / feynman / module4 已定名**，模块 1、2 仍是编号占位。
+> 原模块 3 已由「材料科学错题集」取代；原模块 5、6 已删除；`pageDemo` 已移到
+> `frontend/src/reference/pageDemo/`，不再注册到左栏。
+> 模块 1、2 定名之后，改三处：各任务书的「模块名」行、`CODEOWNERS` 的路径、本表。
 > 用 `python scripts/module.py list` 随时核对当前状态。
 
 > ⚠️ **`CODEOWNERS` 是给 GitHub 用的**（决定谁的 PR 该找谁 review），
@@ -100,10 +102,11 @@ export default {
 |---|---|---|
 | `module1` | 模块 1（名字待定） | 【待填 —— 在该模块任务书的「数据形状」一节写】 |
 | `module2` | 模块 2（名字待定） | 【待填】 |
-| `module3` | 模块 3（名字待定） | 【待填】 |
-| `module4` | 模块 4（名字待定） | 【待填】 |
+| `mistakeBook` | 材料科学错题集 | 见 `frontend/src/features/mistakeBook/AGENTS.md` |
+| `module4` | 金相组织辨析 | 见 `frontend/src/features/module4/` 的 `caseId` 等字段 |
 | `visual3d` | 3D 可视化 | `{structure, feature, atoms:[{x,y,z}], bonds:[[i,j]], sites, cell, stacking, params}` |
 | `feynman` | 费曼追问 | `{concept, rounds:[{question,userAnswer,critique,annotated:[{text,kind,note}]}], score, overall, suggestions}` |
+| `knowledgeBase` | 知识库 | 画布预览用元信息；整页由原 RAG 系统提供 |
 
 > 📌 **这张表是全项目的契约表。** 每个模块的数据形状定下来后，**同步填进来**，
 > 并在群里说一声 —— 前后端都按这张表对字段。
@@ -117,7 +120,7 @@ export default {
 
 默认每个模块渲染在**右栏画布**里（对话流还在左边）。但 `FeatureModule` 可以多填一个
 `page` 组件 —— 填了它，**点这个模块时主区整个换成它**，壳的顶栏/对话流/输入框全部让位。
-代码示例见 `frontend/src/features/pageDemo/`（一个最小可跑的整页示例）。
+代码示例见 `frontend/src/reference/pageDemo/`（一个最小可跑的整页示例）。
 
 ```ts
 const feature: FeatureModule = {
@@ -133,7 +136,7 @@ const feature: FeatureModule = {
 
 ### 什么时候该用
 
-**技术上没有数量上限** —— 6 个模块全用整页都行，代码里没有任何计数。
+**技术上没有数量上限** —— 7 个模块全用整页都行，代码里没有任何计数。
 
 真正的判断标准是**这个模块需要的是「更大的画布」，还是「另一种交互形态」**：
 
@@ -171,7 +174,8 @@ const feature: FeatureModule = {
 `page` 组件拿到的 props 和 `Component` 完全一样：
 `{ artifact, onSendMessage, onEmitArtifact }`。
 所以整页界面里也能调 `onSendMessage()` 让 Agent 去干活 —— 只是界面由你自己画。
-`pageDemo` 的「智能问答」tab 就是规矩 3 的示范写法。
+`pageDemo` 的「智能问答」tab 就是规矩 3 的示范写法（参考实现，位于
+`frontend/src/reference/pageDemo/`，不注册到左栏）。
 
 ## 加/删模块用脚手架，不要手搓
 

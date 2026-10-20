@@ -69,7 +69,7 @@ function readUrl(): string {
 }
 
 /**
- * 「构建你的知识库」整页 —— 直接内嵌用户已有的「材料科学RAG系统」Web 界面。
+ * 「知识库」整页 —— 直接内嵌用户已有的「材料科学RAG系统」Web 界面。
  *
  * 页面 1:1 呈现原系统（总览 / 文献库 / 智能问答 / 设置），不自建任何界面；
  * 顶栏只做三件事：显示连接状态、允许改服务地址（默认 8765）、新窗口打开。
@@ -118,7 +118,7 @@ export function Page(_props: FeatureProps) {
         <div className="kb-pos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="kb-card">
             <h2>插件已禁用</h2>
-            <p>「构建你的知识库」当前处于关闭状态，启用后即可 1:1 内嵌原「材料科学RAG系统」界面。</p>
+            <p>「知识库」当前处于关闭状态，启用后即可 1:1 内嵌原「材料科学RAG系统」界面。</p>
             <div className="kb-actions">
               <button className="kb-btn" onClick={() => toggleEnabled(true)}>
                 启用插件
@@ -138,7 +138,7 @@ export function Page(_props: FeatureProps) {
 
       {/* 顶栏：状态 + 地址 + 新窗口打开 */}
       <div className="kb-bar">
-        <b>构建你的知识库</b>
+        <b>知识库</b>
         <span className={`kb-dot ${status}`} />
         <span className="kb-state">{stateText} · 材料科学 RAG 知识库</span>
         <span className="grow" />

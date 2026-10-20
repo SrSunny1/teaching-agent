@@ -4,7 +4,7 @@ import { Page } from './Page'
 import { preview } from './preview'
 
 /**
- * 【构建你的知识库】—— 可点击块插件（RAG 接入模块）。
+ * 【知识库】—— 可点击块插件（RAG 接入模块）。
  *
  * 左栏入口点击后整页 1:1 内嵌用户已有的「材料科学RAG系统」Web 界面
  * （总览 / 文献库 / 智能问答 / 设置），不自建界面、不改原系统。
@@ -17,11 +17,11 @@ import { preview } from './preview'
  */
 const feature: FeatureModule = {
   id: 'knowledgeBase',
-  title: '构建你的知识库',
-  order: 92,
+  title: '知识库',
+  order: 90,
   artifactTypes: ['knowledgeBase'],
   autoOpenCanvas: false,
-  persona: '「构建你的知识库」入口：负责接入材料科学 RAG 知识库，检索答疑依据证据并标注出处，检索不到就明确说明',
+  persona: '「知识库」入口：负责接入材料科学 RAG 知识库，检索答疑依据证据并标注出处，检索不到就明确说明',
   preview,
   Component,
   page: Page,

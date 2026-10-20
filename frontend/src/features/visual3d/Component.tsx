@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -44,11 +44,20 @@ const ATOM_ROLE: Record<string, { corner: string; rest: string }> = {
   fcc: { corner: '角原子 · 1/8', rest: '面心原子 · 1/2' },
   hcp: { corner: '棱柱顶点 · 1/6', rest: '底面心 1/2 + 内部 1' },
 }
-type View = 'cell' | 'octahedral' | 'tetrahedral'
+type View = 'cell' | 'octahedral' | 'tetrahedral' | 'all'
 const VIEWS: { id: View; label: string; kind?: string }[] = [
   { id: 'cell', label: '晶胞结构' },
   { id: 'octahedral', label: '八面体间隙', kind: '八面体间隙' },
   { id: 'tetrahedral', label: '四面体间隙', kind: '四面体间隙' },
+  { id: 'all', label: '全部间隙', kind: 'all' },
+]
+
+/** 结构切换器：点一下让 Agent 重新加载对应结构（不在前端做晶体学计算）。 */
+const STRUCTURES: { id: NonNullable<Payload['structure']>; label: string; name: string }[] = [
+  { id: 'fcc', label: 'FCC', name: '面心立方' },
+  { id: 'bcc', label: 'BCC', name: '体心立方' },
+  { id: 'hcp', label: 'HCP', name: '密排六方' },
+  { id: 'sc', label: 'SC', name: '简单立方' },
 ]
 
 const COLORS = {
@@ -77,12 +86,24 @@ const RADIUS_STATES = {
 type RadiusState = keyof typeof RADIUS_STATES
 
 /** 滑杆范围：再小原子缩成点看不出结构，再大重叠得太夸张。1.0 落在中间偏右。 */
-const RADIUS_MIN = 0.55
+const RADIUS_MIN = 0.5
 const RADIUS_MAX = 1.12
+
+/**
+ * 默认球棍模型的原子半径（以晶胞边长 a 为单位）。
+ * 0.269 a 时球彼此不相切，能看清晶胞骨架和键；拖到 t=1 才回到“最近邻相切”。
+ */
+const DEFAULT_RADIUS_A = 0.269
 
 function toVec(p: Atom, cell: Payload['cell'] & object, structure?: Payload['structure']): [number, number, number] {
   if (structure === 'hcp') return [p.x * cell.a, p.y * cell.b, p.z - cell.c / 2]
   return [(p.x - 0.5) * cell.a, (p.y - 0.5) * cell.b, (p.z - 0.5) * cell.c]
+}
+
+/** 「分离」滑杆：把原子/间隙沿晶胞中心向外推，纯视图变换，不改晶体学数据。 */
+function explodeVec(v: [number, number, number], factor: number): [number, number, number] {
+  const k = 1 + factor
+  return [v[0] * k, v[1] * k, v[2] * k]
 }
 
 function visibleInCut(p: Atom, structure?: Payload['structure']) {
@@ -156,35 +177,44 @@ function CellFrame({ cell, structure, cutaway }: {
   </group>
 }
 
-function Atoms({ atoms, cell, radius, structure, cutaway }: {
+function Atoms({ atoms, cell, radius, structure, cutaway, explode, transparent, hovered, selected, neighbors, onHover, onSelect }: {
   atoms: Atom[]; cell: Payload['cell'] & object; radius: number; structure?: Payload['structure']; cutaway: boolean
+  explode: number; transparent: boolean; hovered: number | null; selected: number | null
+  neighbors: Set<number>; onHover: (index: number | null) => void; onSelect: (index: number) => void
 }) {
   return <group>
     {atoms.map((atom, index) => {
       if (cutaway && !visibleInCut(atom, structure)) return null
-      const [x, y, z] = toVec(atom, cell, structure)
+      const [x, y, z] = explodeVec(toVec(atom, cell, structure), explode)
       const corner = structure === 'hcp'
         ? Math.abs(Math.hypot(atom.x, atom.y) - 1) < 0.02 && (atom.z < 0.01 || atom.z > cell.c - 0.01)
         : [atom.x, atom.y, atom.z].every((v) => v === 0 || v === 1)
-      // ★ 不再按角/面区分大小 —— 同一个晶胞里本来就是同一种原子，而且这个模块要展示
-      //   「恰好相切」，球一大一小的话相切在画面上就是假的，教学点就塌了。
-      //   角原子只保留颜色区分（仍能一眼看出被相邻晶胞共享的那一类）。
-      const size = radius
+      const isSelected = selected === index
+      const isNeighbor = neighbors.has(index)
+      const isHovered = hovered === index
+      const color = isSelected ? '#ffd166' : isNeighbor ? '#7ce0c0' : corner ? COLORS.atom : COLORS.atomLight
+      const emissive = isSelected ? '#7a4b00' : isNeighbor ? '#0d4f3c' : corner ? '#183b78' : '#254878'
       return <group key={index} position={[x, y, z]}>
-        <mesh>
-          <sphereGeometry args={[size * 1.18, 28, 22]} />
-          <meshBasicMaterial color={COLORS.atom} transparent opacity={0.12} depthWrite={false} />
+        <mesh raycast={() => null}>
+          <sphereGeometry args={[radius * 1.18, 28, 22]} />
+          <meshBasicMaterial color={color} transparent opacity={isHovered ? 0.28 : 0.12} depthWrite={false} />
         </mesh>
-        <mesh>
-          <sphereGeometry args={[size, 32, 24]} />
+        <mesh
+          onPointerOver={(event) => { event.stopPropagation(); onHover(index) }}
+          onPointerOut={() => onHover(null)}
+          onClick={(event) => { event.stopPropagation(); onSelect(index) }}
+        >
+          <sphereGeometry args={[radius, 32, 24]} />
           <meshPhysicalMaterial
-            color={corner ? COLORS.atom : COLORS.atomLight}
-            emissive={corner ? '#183b78' : '#254878'}
-            emissiveIntensity={0.28}
+            color={color}
+            emissive={emissive}
+            emissiveIntensity={isSelected || isNeighbor ? 0.6 : 0.28}
             roughness={0.24}
             metalness={0.22}
             clearcoat={0.78}
             clearcoatRoughness={0.2}
+            transparent={transparent}
+            opacity={transparent ? 0.55 : 1}
           />
         </mesh>
       </group>
@@ -192,9 +222,9 @@ function Atoms({ atoms, cell, radius, structure, cutaway }: {
   </group>
 }
 
-function Bonds({ atoms, bonds, cell, radius, structure, cutaway, tangent }: {
+function Bonds({ atoms, bonds, cell, radius, structure, cutaway, tangent, explode, highlight }: {
   atoms: Atom[]; bonds: [number, number][]; cell: Payload['cell'] & object; radius: number
-  structure?: Payload['structure']; cutaway: boolean; tangent: boolean
+  structure?: Payload['structure']; cutaway: boolean; tangent: boolean; explode: number; highlight: Set<number>
 }) {
   return <group>
     {bonds.map(([i, j], index) => {
@@ -203,20 +233,24 @@ function Bonds({ atoms, bonds, cell, radius, structure, cutaway, tangent }: {
       if (!a || !b || (cutaway && (!visibleInCut(a, structure) || !visibleInCut(b, structure)))) return null
       // 相切时点亮第一根最近邻键：它就是「2r = 最近邻距离」那句话的视觉锚点
       const anchor = tangent && index === 0
-      return <Rod key={index} start={toVec(a, cell, structure)} end={toVec(b, cell, structure)}
-        radius={radius * (anchor ? 0.26 : 0.12)}
-        color={anchor ? COLORS.anchor : COLORS.bond} opacity={anchor ? 1 : 0.68} />
+      const active = highlight.has(index)
+      return <Rod key={index}
+        start={explodeVec(toVec(a, cell, structure), explode)}
+        end={explodeVec(toVec(b, cell, structure), explode)}
+        radius={radius * (anchor ? 0.26 : active ? 0.18 : 0.12)}
+        color={anchor ? COLORS.anchor : active ? '#ffd166' : COLORS.bond}
+        opacity={anchor || active ? 1 : 0.68} />
     })}
   </group>
 }
 
-function Sites({ sites, cell, radius, structure, cutaway }: {
-  sites: Site[]; cell: Payload['cell'] & object; radius: number; structure?: Payload['structure']; cutaway: boolean
+function Sites({ sites, cell, radius, structure, cutaway, explode }: {
+  sites: Site[]; cell: Payload['cell'] & object; radius: number; structure?: Payload['structure']; cutaway: boolean; explode: number
 }) {
   return <group>
     {sites.map((site, index) => {
       if (cutaway && !visibleInCut(site, structure)) return null
-      const [x, y, z] = toVec(site, cell, structure)
+      const [x, y, z] = explodeVec(toVec(site, cell, structure), explode)
       const color = site.kind === '八面体间隙' ? COLORS.octa : COLORS.tetra
       return <group key={index} position={[x, y, z]}>
         <mesh>
@@ -239,8 +273,11 @@ function CutPlane({ cell }: { cell: Payload['cell'] & object }) {
   </mesh>
 }
 
-function CrystalScene({ data, view, cutaway, radiusScale }: {
+function CrystalScene({ data, view, cutaway, radiusScale, autoRotate, explode, showBonds, showFrame, showSites, transparent, hovered, selected, onHover, onSelect, resetKey }: {
   data: Payload; view: View; cutaway: boolean; radiusScale: number
+  autoRotate: boolean; explode: number; showBonds: boolean; showFrame: boolean; showSites: boolean
+  transparent: boolean; hovered: number | null; selected: number | null
+  onHover: (index: number | null) => void; onSelect: (index: number) => void; resetKey: number
 }) {
   const cell = data.cell ?? { a: 1, b: 1, c: 1 }
   const atoms = data.atoms ?? []
@@ -252,7 +289,24 @@ function CrystalScene({ data, view, cutaway, radiusScale }: {
   const radius = (data.params?.nearestNeighbor ?? 0.7071) / 2 * radiusScale
   const tangent = Math.abs(radiusScale - 1) <= 0.02
   const activeKind = VIEWS.find((item) => item.id === view)?.kind
-  const sites = activeKind ? (data.sites ?? []).filter((site) => site.kind === activeKind) : []
+  const sites = !activeKind
+    ? []
+    : activeKind === 'all'
+      ? (data.sites ?? [])
+      : (data.sites ?? []).filter((site) => site.kind === activeKind)
+
+  // 选中某个原子时，把它的最近邻和相邻键挑出来高亮
+  const neighbors = new Set<number>()
+  const highlightBonds = new Set<number>()
+  if (selected != null) {
+    bonds.forEach(([i, j], index) => {
+      if (i === selected) { neighbors.add(j); highlightBonds.add(index) }
+      if (j === selected) { neighbors.add(i); highlightBonds.add(index) }
+    })
+  }
+
+  const controlsRef = useRef<any>(null)
+  useEffect(() => { controlsRef.current?.reset() }, [resetKey])
 
   return <>
     <color attach="background" args={['#101725']} />
@@ -262,12 +316,21 @@ function CrystalScene({ data, view, cutaway, radiusScale }: {
     <pointLight position={[-3, 1, -2]} intensity={16} distance={8} color="#3978d8" />
     <pointLight position={[2, -2, 3]} intensity={8} distance={6} color="#64d7bd" />
     <gridHelper args={[3.4, 17, '#355071', '#243448']} position={[0, -0.85, 0]} />
-    <CellFrame cell={cell} structure={structure} cutaway={cutaway} />
+    {showFrame && <CellFrame cell={cell} structure={structure} cutaway={cutaway} />}
     {cutaway && <CutPlane cell={cell} />}
-    <Bonds atoms={atoms} bonds={bonds} cell={cell} radius={radius} structure={structure} cutaway={cutaway} tangent={tangent} />
-    <Atoms atoms={atoms} cell={cell} radius={radius} structure={structure} cutaway={cutaway} />
-    {sites.length > 0 && <Sites sites={sites} cell={cell} radius={radius} structure={structure} cutaway={cutaway} />}
-    <OrbitControls enableDamping dampingFactor={0.075} minDistance={1.8} maxDistance={8} makeDefault />
+    {showBonds && <Bonds atoms={atoms} bonds={bonds} cell={cell} radius={radius} structure={structure} cutaway={cutaway} tangent={tangent} explode={explode} highlight={highlightBonds} />}
+    <Atoms atoms={atoms} cell={cell} radius={radius} structure={structure} cutaway={cutaway} explode={explode} transparent={transparent} hovered={hovered} selected={selected} neighbors={neighbors} onHover={onHover} onSelect={onSelect} />
+    {showSites && sites.length > 0 && <Sites sites={sites} cell={cell} radius={radius} structure={structure} cutaway={cutaway} explode={explode} />}
+    <OrbitControls
+      ref={controlsRef}
+      autoRotate={autoRotate}
+      autoRotateSpeed={0.8}
+      enableDamping
+      dampingFactor={0.075}
+      minDistance={1.8}
+      maxDistance={8}
+      makeDefault
+    />
     <GizmoHelper alignment="bottom-right" margin={[42, 42]}>
       <GizmoViewport axisColors={['#f27878', '#55d6b0', '#6b9fff']} labels={['X轴', 'Y轴', 'Z轴']} labelColor="#dce7f7" />
     </GizmoHelper>
@@ -276,18 +339,59 @@ function CrystalScene({ data, view, cutaway, radiusScale }: {
 
 export default function Component({ artifact, onSendMessage, onEmitArtifact }: FeatureProps) {
   const data = (artifact?.data ?? null) as Payload | null
+  const params = data?.params
+  // 相切半径 r/a 由后端给；没有就退回「最近邻距离的一半」（几何上等价）。
+  const tangentRatio = params ? (params.tangentRadiusRatio ?? params.nearestNeighbor / 2) : null
+  // 默认显示球棍模型：r 固定为 0.269 a，而不是一开始就相切。
+  const defaultRadiusScale = tangentRatio
+    ? Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, DEFAULT_RADIUS_A / tangentRatio))
+    : 1
   const [view, setView] = useState<View>('cell')
   const [cutaway, setCutaway] = useState(false)
   // ★ 原子半径滑杆。跟 cutaway 一样是**纯视图设置**：只存本地、不发 onEmitArtifact，
   //   否则拖动时每一帧都在刷整块 artifact（壳那边是整块替换，代价白付）。
-  //   代价是新产物到达时会被 useEffect 重置回 1 —— 与 cutaway 的既有行为一致。
-  const [radiusScale, setRadiusScale] = useState(1)
+  //   代价是新产物到达时会被 useEffect 重置回球棍模型的默认半径。
+  const [radiusScale, setRadiusScale] = useState(defaultRadiusScale)
+  // 交互控制：全部是纯视图状态，只存本地，不发 onEmitArtifact。
+  const [autoRotate, setAutoRotate] = useState(true)
+  const [explode, setExplode] = useState(0)
+  const [showBonds, setShowBonds] = useState(true)
+  const [showFrame, setShowFrame] = useState(true)
+  const [showSites, setShowSites] = useState(true)
+  const [transparent, setTransparent] = useState(false)
+  const [hovered, setHovered] = useState<number | null>(null)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [resetKey, setResetKey] = useState(0)
+  const canvasBoxRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const feature = data?.feature
-    setView(feature === 'octahedral' || feature === 'tetrahedral' ? feature : 'cell')
+    setView(feature === 'octahedral' || feature === 'tetrahedral' || feature === 'all' ? feature : 'cell')
     setCutaway(false)
-    setRadiusScale(1)
+    setRadiusScale(defaultRadiusScale)
+    setExplode(0)
+    setHovered(null)
+    setSelected(null)
+  }, [data, defaultRadiusScale])
+
+  /*
+   * ★ 首帧空白修复：画布第一次出现时，右栏可能正在展开/动画中，
+   *   react-three-fiber 的 Canvas 会按 0 尺寸初始化，于是「第一次没效果、第二次才出来」。
+   *   ResizeObserver 监听画布容器，尺寸一落定就通知 R3F 重新量一次。
+   */
+  useEffect(() => {
+    const el = canvasBoxRef.current
+    if (!el) return
+    const bump = () => window.dispatchEvent(new Event('resize'))
+    const observer = new ResizeObserver(bump)
+    observer.observe(el)
+    const raf = requestAnimationFrame(bump)
+    return () => { cancelAnimationFrame(raf); observer.disconnect() }
+  }, [])
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
+    return () => cancelAnimationFrame(raf)
   }, [data])
 
   const chooseView = (next: View) => {
@@ -297,19 +401,33 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
 
   const structure = data?.structure ?? 'fcc'
   const label = STRUCT_LABEL[structure] ?? structure
-  const params = data?.params
   const activeKind = VIEWS.find((item) => item.id === view)?.kind
-  const siteCount = activeKind ? (data?.sites ?? []).filter((site) => site.kind === activeKind).length : 0
+  const sitesForView = !activeKind
+    ? []
+    : activeKind === 'all'
+      ? (data?.sites ?? [])
+      : (data?.sites ?? []).filter((site) => site.kind === activeKind)
+  const siteCount = sitesForView.length
   const hasData = Boolean(data?.atoms?.length)
+  const atoms = data?.atoms ?? []
+  const bonds = data?.bonds ?? []
+  const hoveredAtom = hovered != null ? atoms[hovered] : null
+  const selectedAtom = selected != null ? atoms[selected] : null
+  const selectedBondCount = selected != null ? bonds.filter(([i, j]) => i === selected || j === selected).length : 0
 
   // ── 半径滑杆读数 ──
-  // 相切半径 r/a 由后端给；没有就退回「最近邻距离的一半」（几何上等价）。
-  const tangentRatio = params ? (params.tangentRadiusRatio ?? params.nearestNeighbor / 2) : null
   const radiusNow = tangentRatio != null ? tangentRatio * radiusScale : null
   // 球体积 ∝ r³，所以致密度随 t³ 缩放。t=1 时正好等于后端给的教材值。
   const packingNow = params ? params.packing * radiusScale ** 3 : null
   const radiusState: RadiusState = radiusScale < 0.98 ? 'gap' : radiusScale > 1.02 ? 'overlap' : 'tangent'
   const st = RADIUS_STATES[radiusState]
+
+  const toggleChip = (text: string, value: boolean, set: (v: boolean) => void) => (
+    <button className="chip" aria-pressed={value} onClick={() => set(!value)}
+      style={value ? { color: 'var(--accent)', background: 'var(--accent-soft)', borderColor: 'var(--accent-border)' } : undefined}>
+      {text}
+    </button>
+  )
 
   return <div className="feat" style={{ height: '100%', minHeight: 0, overflowY: 'auto', padding: 0 }}>
     <div style={{ padding: '16px 16px 12px' }}>
@@ -334,12 +452,48 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
           {cutaway ? '剖视已开启' : '剖视内部'}
         </button>
       </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-xs)' }}>结构</span>
+        {STRUCTURES.map((item) => (
+          <button key={item.id} className="chip" disabled={structure === item.id}
+            onClick={() => onSendMessage(`请加载${item.name}（${item.label}）晶胞结构`)}
+            style={structure === item.id ? { color: 'var(--accent)', background: 'var(--accent-soft)', borderColor: 'var(--accent-border)' } : undefined}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+        {toggleChip('显示键', showBonds, setShowBonds)}
+        {toggleChip('晶胞框', showFrame, setShowFrame)}
+        {toggleChip('间隙', showSites, setShowSites)}
+        {toggleChip('半透明', transparent, setTransparent)}
+        {toggleChip('自动旋转', autoRotate, setAutoRotate)}
+        <button className="chip" onClick={() => setResetKey((key) => key + 1)}>重置视角</button>
+      </div>
     </div>
 
-    <div style={{ position: 'relative', height: 'clamp(290px, 47vh, 520px)', margin: '0 10px', overflow: 'hidden', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-soft)', background: 'radial-gradient(ellipse at 52% 43%, #1b2c42 0%, #111b29 52%, #10151f 100%)' }}>
+    <div ref={canvasBoxRef} style={{ position: 'relative', height: 'clamp(290px, 47vh, 520px)', margin: '0 10px', overflow: 'hidden', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-soft)', background: 'radial-gradient(ellipse at 52% 43%, #1b2c42 0%, #111b29 52%, #10151f 100%)' }}>
       {!hasData ? <div className="box" style={{ margin: 14 }}>在对话里询问晶胞或间隙结构，Agent 会加载对应的 3D 模型。</div> : (
         <Canvas camera={{ position: [2.45, 1.9, 2.55], fov: 39 }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }}>
-          <CrystalScene data={data!} view={view} cutaway={cutaway} radiusScale={radiusScale} />
+          <CrystalScene
+            data={data!}
+            view={view}
+            cutaway={cutaway}
+            radiusScale={radiusScale}
+            autoRotate={autoRotate}
+            explode={explode}
+            showBonds={showBonds}
+            showFrame={showFrame}
+            showSites={showSites}
+            transparent={transparent}
+            hovered={hovered}
+            selected={selected}
+            onHover={setHovered}
+            onSelect={(index) => setSelected((prev) => (prev === index ? null : index))}
+            resetKey={resetKey}
+          />
         </Canvas>
       )}
       <div style={{ position: 'absolute', left: 12, top: 11, display: 'flex', gap: 6, alignItems: 'center', padding: '5px 8px', border: '1px solid rgba(160,190,230,.15)', borderRadius: 'var(--r-sm)', background: 'rgba(12,19,29,.68)', backdropFilter: 'blur(8px)', color: '#d7e5fa', fontSize: 'var(--fs-xs)' }}>
@@ -349,14 +503,50 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
       {data?.stacking && <div style={{ position: 'absolute', left: 12, bottom: 11, padding: '6px 9px', borderRadius: 'var(--r-sm)', border: '1px solid rgba(160,190,230,.15)', background: 'rgba(12,19,29,.68)', backdropFilter: 'blur(8px)', color: '#cbd9ee', fontSize: 'var(--fs-xs)' }}>
         密排层序 <strong style={{ color: '#fff', marginLeft: 5 }}>{data.stacking}</strong>
       </div>}
+      {(hoveredAtom || selectedAtom) && (
+        <div style={{ position: 'absolute', right: 12, bottom: 11, maxWidth: '62%', padding: '6px 9px', borderRadius: 'var(--r-sm)', border: '1px solid rgba(160,190,230,.15)', background: 'rgba(12,19,29,.78)', backdropFilter: 'blur(8px)', color: '#dbe7fa', fontSize: 'var(--fs-xs)', lineHeight: 1.5 }}>
+          {selectedAtom ? (
+            <>
+              <strong style={{ color: '#ffd166' }}>选中原子 #{selected}</strong>
+              <span style={{ marginLeft: 6 }}>
+                分数坐标 ({selectedAtom.x}, {selectedAtom.y}, {selectedAtom.z}) · 晶胞内最近邻键 {selectedBondCount} 条
+              </span>
+            </>
+          ) : hoveredAtom ? (
+            <>
+              <strong>悬停原子 #{hovered}</strong>
+              <span style={{ marginLeft: 6 }}>
+                分数坐标 ({hoveredAtom.x}, {hoveredAtom.y}, {hoveredAtom.z}) · 点击可高亮它的最近邻
+              </span>
+            </>
+          ) : null}
+        </div>
+      )}
     </div>
 
     <div style={{ padding: '13px 16px 16px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 7 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(112px, 1fr))', gap: 7 }}>
         <Metric label="晶胞原子数" value={params?.atomsPerCell ?? '—'} detail="个 / 晶胞" />
         <Metric label="配位数" value={params?.coordination ?? '—'} detail="最近邻原子数" />
         <Metric label="理论堆积因子" value={params ? `${Math.round(params.packing * 100)}%` : '—'} detail="教材值 · 相切时" />
+        <Metric label="最近邻距离" value={params ? `${params.nearestNeighbor.toFixed(3)} a` : '—'} detail="原子中心距" />
       </div>
+
+      {/* ── 分离间距：把原子沿晶胞中心向外推开，看清内部结构 ── */}
+      {hasData && (
+        <div style={{ marginTop: 9 }}>
+          <div className="kv" style={{ border: 'none', paddingBottom: 0 }}>
+            <span>分离间距</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{explode.toFixed(2)}</span>
+          </div>
+          <input
+            type="range" min={0} max={0.6} step={0.02} value={explode}
+            onChange={(event) => setExplode(Number(event.target.value))}
+            aria-label="原子分离间距，0 表示不分离"
+            style={{ width: '100%', accentColor: 'var(--accent)' }}
+          />
+        </div>
+      )}
 
       {/* ── 原子半径滑杆 ────────────────────────────────────────────
           把「致密度 0.74」从一个要背的结论，变成学生自己拖出来的实验：
@@ -404,6 +594,8 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
         <Legend color={COLORS.bond} label="最近邻键" />
         <Legend color={COLORS.octa} label="八面体间隙" />
         <Legend color={COLORS.tetra} label="四面体间隙" />
+        {selected != null && <Legend color="#ffd166" label="选中原子" />}
+        {selected != null && <Legend color="#7ce0c0" label="它的最近邻" />}
         {activeKind && <span style={{ marginLeft: 'auto' }}>当前高亮 {siteCount} 个位置</span>}
       </div>
       {params && <button className="chip" style={{ marginTop: 13, width: '100%' }}

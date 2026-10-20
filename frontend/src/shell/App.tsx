@@ -24,6 +24,79 @@ const uid = () => `m${++seq}`
 /** 全局对话（不在任何模块里）的 key */
 const GLOBAL_CONV = '__global__'
 
+/**
+ * 模块导航的别名表。
+ *
+ * 用户在全局对话里说「进入 3D 可视化」「打开错题集」「用知识库查一下」时，
+ * 壳直接把对话切到对应模块，不把这句话发给模型。模块自己声明的 `title` 也会参与匹配。
+ */
+const MODULE_ALIASES: Record<string, string[]> = {
+  visual3d: ['3d', '3d可视化', '可视化', '晶体结构', '晶胞', '三维', '晶体'],
+  feynman: ['费曼', '费曼追问', '追问', '费曼学习法'],
+  mistakeBook: ['错题', '错题集', '错题本', '材料科学错题集'],
+  knowledgeBase: ['知识库', 'rag', '材料科学rag', '构建你的知识库'],
+  module4: ['金相', '金相组织', '组织辨析', '金相组织辨析', '微观组织', '金相分析'],
+  module1: ['模块1', '模块一'],
+  module2: ['模块2', '模块二'],
+}
+
+const NAV_VERBS = [
+  '进入', '打开', '切换到', '切到', '我想用', '我要用', '帮我打开', '帮我进入',
+  '帮我切到', '请打开', '请进入', '去', '看看', '看', '我想看', '使用', '用',
+]
+const BACK_VERBS = ['退出', '回到', '返回', '离开']
+
+const normalizeNav = (text: string) => text.toLowerCase().replace(/[\s，。！？、：:；;,.!?]/g, '')
+
+/**
+ * 从一句话里识别「进入某个模块」的意图。
+ *
+ * 只有两种情况算导航：
+ *   1. 句子以模块名/别名开头（「知识库里有哪些文献」）；
+ *   2. 句子以导航动词开头（「进入 3D 可视化」「用错题集分析这道题」）。
+ * 其他情况（「什么是错题集」）照常发给模型，由 artifact 自动跳转兜底。
+ */
+function detectModuleIntent(text: string): { moduleId: string; rest: string } | null {
+  const norm = normalizeNav(text)
+  if (!norm) return null
+
+  if (BACK_VERBS.some((v) => norm.startsWith(normalizeNav(v)))) {
+    return { moduleId: GLOBAL_CONV, rest: '' }
+  }
+
+  let best: { id: string; alias: string } | null = null
+  for (const f of features) {
+    const aliases = [f.title, f.id, ...(MODULE_ALIASES[f.id] ?? [])]
+    for (const alias of aliases) {
+      const a = normalizeNav(alias)
+      if (!a) continue
+      if (norm.includes(a) && (!best || a.length > best.alias.length)) best = { id: f.id, alias: a }
+    }
+  }
+  if (!best) return null
+
+  const startsWithVerb = NAV_VERBS.some((v) => norm.startsWith(normalizeNav(v)))
+  if (!startsWithVerb && !norm.startsWith(best.alias)) return null
+
+  // 把导航动词和模块名从原句里剥掉，剩下的作为模块里的第一句话。
+  // 只剥「最长的一个」模块名候选，避免把「晶体缺陷」里的「晶体」也误删。
+  let rest = text
+  for (const v of [...NAV_VERBS, ...BACK_VERBS]) {
+    rest = rest.replace(new RegExp(`^\\s*${v}\\s*`), '')
+  }
+  const candidates = [featureById(best.id)?.title, ...(MODULE_ALIASES[best.id] ?? [])]
+    .filter((item): item is string => Boolean(item))
+    .sort((a, b) => b.length - a.length)
+  const matched = candidates.find((item) =>
+    new RegExp(item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(rest),
+  )
+  if (matched) rest = rest.replace(new RegExp(matched.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
+  rest = rest.replace(/^[\s，。！？、：:；;,]*模块[\s，。！？、：:；;,]*/, '').trim()
+  rest = rest.replace(/^[\s，。！？、：:；;,]+/, '').trim()
+  return { moduleId: best.id, rest }
+}
+
+
 /** 把一个 SSE 事件合并进指定的 assistant 消息，返回新数组。 */
 function patchMsg(list: Message[], id: string, fn: (m: Message) => Message): Message[] {
   return list.map((m) => (m.id === id ? fn(m) : m))
@@ -100,6 +173,15 @@ export default function App() {
   /** 当前对话的 key —— 发送时捕获它，保证回复写回原来的对话，而不是写到用户已切走的那条 */
   const convKeyRef = useRef<string>(GLOBAL_CONV)
   convKeyRef.current = activeConvKey
+
+  /**
+   * 本轮流式回复当前写到哪个对话 key。
+   *
+   * 正常情况下就是发送时的 convKey。但在全局对话里触发了某个模块的 artifact 时，
+   * 我们会把这条对话整体搬进该模块、并自动切过去；后续 token 必须继续写到新 key，
+   * 否则用户会看到模块对话一直空着、答案还在全局对话里流。
+   */
+  const streamConvKeyRef = useRef<string>(GLOBAL_CONV)
 
   const setConv = useCallback((key: string, updater: (prev: Message[]) => Message[]) => {
     setConversations((prev) => ({ ...prev, [key]: updater(prev[key] ?? []) }))
@@ -198,17 +280,39 @@ export default function App() {
 
   const send = useCallback(
     async (text: string, image?: string) => {
-      const q = text.trim()
+      const trimmed = text.trim()
       // 只发一张图、不打字也是合法的（「这张金相有什么缺陷？」可以省略）
-      if ((!q && !image) || busy) return
+      if ((!trimmed && !image) || busy) return
+
+      // ★ 模块导航意图：先切对话，再把剩下的内容作为该模块的第一句话发出去。
+      //   例如「进入错题集，帮我分析第三题」→ 切到错题集，发送「帮我分析第三题」。
+      let content = trimmed
+      if (!image) {
+        const intent = detectModuleIntent(trimmed)
+        if (intent) {
+          const targetId = intent.moduleId
+          const target = targetId === GLOBAL_CONV ? null : featureById(targetId)
+          const prevKey = convKeyRef.current
+          setActiveFeatureId(target ? target.id : null)
+          setActiveConvKey(targetId)
+          convKeyRef.current = targetId
+          setPanelOpen(Boolean(target?.autoOpenCanvas))
+          if (prevKey !== targetId) setArtifact(null)
+          if (!intent.rest) return
+          content = intent.rest
+        }
+      }
+
+      const q = content.trim()
+      if (!q && !image) return
 
       const convKey = convKeyRef.current
+      streamConvKeyRef.current = convKey
 
       /*
-       * ★ 模块身份取「对话 key」，不是「画布当前显示哪个模块」—— 这两者会分叉：
-       *   在全局对话里触发了某个模块的 artifact 时（见下面 artifact 分支），画布切过去了、
-       *   对话仍然是 __global__。那种情况下问「你负责什么」应当答通用身份，所以以对话为准。
-       *   （这是有意为之的取舍，不是 bug —— 别改成 activeFeatureId。）
+       * ★ 模块身份取「发送时所在对话」。
+       *   全局对话里如果触发了某个模块的 artifact，本轮仍按全局身份作答；
+       *   随后 UI 会自动切到该模块的对话（见下面 artifact 分支），下一轮就带模块 persona 了。
        */
       const mod = featureById(convKey)
       const featureCtx = mod
@@ -233,27 +337,49 @@ export default function App() {
 
       const onEvent = (e: SSEEvent) => {
         if (e.type === 'artifact') {
-          setArtifact({ artifactType: e.artifactType, data: e.data })
           const owner = featureByArtifact(e.artifactType)
-          if (owner) {
-            setActiveFeatureId(owner.id)
-            // ★ 只有模块自己声明了 autoOpenCanvas 才抢屏（见 lib/types.ts）。
-            //   展示型模块（3D 晶体这类）弹出来是「你要看的东西来了」；
-            //   对话型模块（费曼追问这类）弹出来只是从问答区抢走一块屏幕。
-            //   壳不认具体模块名 —— 判据由模块在自己的 index.ts 里声明。
-            if (owner.autoOpenCanvas) setPanelOpen(true)
+          // ★ 没有模块认领的类型（knowledge / heatTreatment / micrograph / graph）不进画布。
+          //   否则同一轮里 Agent 先 load_structure 再 search_knowledge 时，
+          //   后到的 knowledge 会把 visual3d 的原子数据覆盖掉，画布就成了
+          //   「3D 模块的组件 + 检索结果的 data」→ 组件读不到 atoms，显示空白。
+          if (!owner) return
+
+          setArtifact({ artifactType: e.artifactType, data: e.data })
+          setActiveFeatureId(owner.id)
+
+          // ★ 全局对话里触发了模块产物：把整条对话搬进该模块，并自动切过去。
+          //   后续 token 继续写到新 key（streamConvKeyRef），所以答案不会留在全局对话里。
+          //   只有用户此刻仍停留在全局对话才搬；如果他已经手动切走，不要把人拽回来。
+          const fromGlobal =
+            streamConvKeyRef.current === GLOBAL_CONV && convKeyRef.current === GLOBAL_CONV
+          if (fromGlobal && owner.id !== GLOBAL_CONV) {
+            const target = owner.id
+            setConversations((prev) => {
+              const moved = prev[GLOBAL_CONV] ?? []
+              if (moved.length === 0) return prev
+              // 模块里可能已经有历史对话：把全局这条接在后面，别覆盖掉。
+              return { ...prev, [target]: [...(prev[target] ?? []), ...moved], [GLOBAL_CONV]: [] }
+            })
+            streamConvKeyRef.current = target
+            convKeyRef.current = target
+            setActiveConvKey(target)
+            // 与左栏点模块一致：展示型模块自动展开画布，对话型模块保持收起。
+            setPanelOpen(Boolean(owner.autoOpenCanvas))
+          } else if (owner.autoOpenCanvas) {
+            // 已经在模块对话里：只按 autoOpenCanvas 决定要不要抢屏。
+            setPanelOpen(true)
           }
           return
         }
         if (e.type === 'done') {
-          setConv(convKey, (p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
+          setConv(streamConvKeyRef.current, (p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
           return
         }
         if (e.type === 'tool_call') activeTool = e.label
         if (e.type === 'tool_result') activeTool = undefined
         if (e.type === 'token') tokenCount += e.text.length
 
-        setConv(convKey, (p) => patchMsg(p, asstId, (m) => mergeEvent(m, e)))
+        setConv(streamConvKeyRef.current, (p) => patchMsg(p, asstId, (m) => mergeEvent(m, e)))
         setStats({
           activeTool,
           elapsedMs: Math.round(performance.now() - t0),
@@ -277,7 +403,7 @@ export default function App() {
         if (!ctrl.signal.aborted) {
           const message = err instanceof Error ? err.message : String(err)
           onEvent({ type: 'error', message })
-          setConv(convKey, (p) =>
+          setConv(streamConvKeyRef.current, (p) =>
             patchMsg(p, asstId, (m) => ({
               ...m,
               streaming: false,
@@ -288,7 +414,7 @@ export default function App() {
       } finally {
         abortRef.current = null
         setBusy(false)
-        setConv(convKey, (p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
+        setConv(streamConvKeyRef.current, (p) => patchMsg(p, asstId, (m) => ({ ...m, streaming: false })))
         setStats((s) => ({ ...s, activeTool: undefined, elapsedMs: Math.round(performance.now() - t0) }))
       }
     },
@@ -386,7 +512,7 @@ export default function App() {
           onToggleSidebar={() => setSidebarOpen((v) => !v)}
         />
 
-        <ChatStream messages={messages} />
+        <ChatStream messages={messages} onSend={send} />
 
         <Composer busy={busy} onSend={send} onStop={stop} />
 

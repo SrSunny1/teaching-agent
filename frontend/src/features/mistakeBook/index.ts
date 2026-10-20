@@ -19,7 +19,7 @@ import { preview } from './preview'
 const feature: FeatureModule = {
   id: 'mistakeBook',
   title: '材料科学错题集',
-  order: 91,
+  order: 30,
   artifactTypes: ['mistakeBook'],
   autoOpenCanvas: true,
   persona: '材料科学错题集画布：负责错题诊断、错误溯源与订正指导，帮助学生从一道错题吃透一类考点',
