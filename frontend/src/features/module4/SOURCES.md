@@ -82,3 +82,12 @@ the observation text and source metadata, not image pixels.
 新增原图未裁剪或改绘：spheroid.jpg，Eduard Pleshakov，Public domain，https://commons.wikimedia.org/wiki/File:PearliteSph3.jpg ；alsi.png，Djegan，CC BY-SA 3.0，https://commons.wikimedia.org/wiki/File:Al-Si_Microstructure.png ；al6061.png，Bob Clemintime，CC BY-SA 4.0，https://commons.wikimedia.org/wiki/File:6061_Aluminum_Grain_Boundaries.png ；brass.jpg，Strangerhahaha，Public domain，https://commons.wikimedia.org/wiki/File:Microstructure_of_rolled_and_annealed_brass;_magnification_400X.jpg 。
 
 许可链接：https://creativecommons.org/licenses/by-sa/3.0/ 与 https://creativecommons.org/licenses/by-sa/4.0/ 。黄铜仅用于形貌观察，标题与上传历史的处理状态冲突，不用于工艺或相组成结论。新增图不是高校目录条目的替代图，也不代表所有组织已经收齐。
+
+# 2026-10-19 课程讲义与教学大纲
+
+新增的课程讲义与教学大纲文字已进入共享知识库 `backend/knowledge/raw/课程讲义/03-金相试样制备.md` 与 `backend/knowledge/raw/教学大纲/02-材料物理专业实验2.md`。模块4新增的“课程讲义：金相试样制备要点”和10条资料问答均来自这两份材料，不复制课件图片，也不把课件内容冒充为教材原文。
+
+- 《金相试样制备》课件（西安交通大学物理国家级实验教学示范中心，郭永利）：取样、镶样、磨光、抛光、腐蚀五步，常见腐蚀剂表，制备不合格样品示例。
+- 《材料物理专业实验2》教学大纲：学生容易犯的错误、评分标准、金相试样制备和典型材料微观组织观察的课程要求。
+
+教师审核、课件页码对应、图片区域标注仍待完成。讲义中的腐蚀剂配方只用于教学讨论，不替代实验室安全规程和教师现场指导。

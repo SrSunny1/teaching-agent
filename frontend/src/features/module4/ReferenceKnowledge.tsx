@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { forCase, knowledge, references, type KnowledgeEntry } from './knowledge'
+import { courseKnowledge, forCase, knowledge, references, type KnowledgeEntry } from './knowledge'
 import { useLocalRecords } from './useLocalRecords'
 import { cases, caseGroups } from './cases'
 
@@ -22,6 +22,7 @@ export function KnowledgeLibrary() {
   const filtered = knowledge.filter(entry => (!unreadOnly || records[entry.id] !== 'read') && (group === 'all' || entry.caseIds.some(id => cases.find(c => c.id === id)?.group === group)) && `${entry.title} ${entry.fact} ${entry.caution} ${entry.question} ${entry.discussion} ${entry.sourceIds.map(id => references[id].title).join(' ')}`.toLowerCase().includes(query.trim().toLowerCase()))
   return <div className="m4-knowledge">
     <details><summary>课程对应与资料状态</summary><dl><div><dt>课程主线</dt><dd>实验四：典型材料的组织观察与辨析</dd></div><div><dt>钢组织</dt><dd>铁素体、珠光体、奥氏体；相与组织组成物</dd></div><div><dt>铸铁组织</dt><dd>石墨形态、金属基体与莱氏体</dd></div><div><dt>课程原文</dt><dd>课件与教材页码待逐条审核，当前不提供伪造的教材引用</dd></div><div><dt>网络补充</dt><dd>{knowledge.length}条摘要可离线阅读；外部来源链接需联网</dd></div></dl></details>
+    <details open><summary>课程讲义：金相试样制备要点（{courseKnowledge.length} 条）</summary><p className="sub">来源：课程讲义《金相试样制备》· 实验三；教师审核待完成。</p>{courseKnowledge.map(entry => <article className="m4-knowledge-entry" key={entry.id}><h4>{entry.title}</h4><p>{entry.fact}</p><p className="sub"><strong>辨析边界：</strong>{entry.caution}</p><p className="sub">出处：{entry.source}</p></article>)}</details>
     <h4>实验四补充知识</h4><p className="sub">{knowledge.length} 条简要整理 · 更新日期 2026-10-16 · 教师审核待完成</p>
     <label className="m4-field">检索知识<input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="组织名称或关键词" /></label>
     <label className="m4-field">资料范围<select value={group} onChange={e => setGroup(e.target.value)}><option value="all">全部资料</option>{caseGroups.map(name => <option key={name}>{name}</option>)}</select></label>

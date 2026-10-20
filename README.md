@@ -1,6 +1,6 @@
 # 材料物理实验教学 Agent
 
-教学类竞赛作品。知识边界为「材料科学基础实验教材 7 个实验 + 劳动教育四大模块」，
+教学类竞赛作品。知识边界为「《材料科学基础》实验教材 7 个实验 + 材料物理专业实验1/2 教学大纲与配套课件 + 劳动教育四大模块」，
 界面是 DeepSeek Harness / Codex 风格的三栏工作台。
 
 **两个文档，各管一头：**
@@ -396,7 +396,9 @@ cd frontend && rm -rf node_modules package-lock.json && npm install
 **3. 不要裸跑 `npx tsc`** —— 会去网上抓一个同名的废弃包。用 `npm run build` 或 `./node_modules/.bin/tsc`。
 
 **4. 改完知识库素材要重新入库** —— `cd backend && python knowledge/ingest.py`
-素材放 `backend/knowledge/raw/`。
+素材放 `backend/knowledge/raw/`（可分子目录：`教材.docx`、`课程讲义/*.md`、`教学大纲/*.md`、任务书）。
+Markdown 文件可用 front matter 声明 `source` / `doc` / `experiment` / `section`；详见 `backend/knowledge/README.md`。
+入库后跑 `cd backend && python tests/retrieval_probe.py`，确认「库内能命中、库外能拒绝」。
 
 **5. 老式 `.doc` 是 OLE 二进制**，`ingest.py` 用 UTF-16LE 抽取兜底，能用但不如 `.docx` 干净。
 正式入库前建议用 Word 转成 `.docx`。

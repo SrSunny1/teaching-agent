@@ -19,9 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.tools.search_knowledge import MIN_COVERAGE, _load, _score, _tokens  # noqa: E402
+from app.tools.search_knowledge import MIN_COVERAGE, _content_tokens, _load, _score  # noqa: E402
 
-# 知识库**内**的问题 —— 必须命中（教材 7 个实验 + 任务书四大劳育模块）
+# 知识库**内**的问题 —— 必须命中（教材 7 个实验 + 课程讲义/教学大纲 + 任务书四大劳育模块）
 IN_SCOPE = [
     "250目筛分的作用",
     "回火温度对硬度的影响",
@@ -35,6 +35,21 @@ IN_SCOPE = [
     "溶胶-凝胶法的注意事项",
     "仪器怎么养护",
     "珠光体和索氏体有什么区别",
+    # 新增课程讲义 / 教学大纲覆盖的内容
+    "金相试样制备的步骤",
+    "金相试样腐蚀剂怎么选",
+    "苦味酸酒精溶液用来显示什么",
+    "过冷度对结晶组织的影响",
+    "冷却曲线上的水平段为什么出现",
+    "均匀形核和非均匀形核的区别",
+    "维氏硬度压痕对角线怎么测",
+    "热膨胀系数和熔点有什么关系",
+    "非简谐振动为什么导致热膨胀",
+    "45钢860℃淬火后200℃回火",
+    "BCC有没有密排面",
+    "调质处理是什么",
+    "面心立方(111)晶面为什么是密排面",
+    "差示扫描量热是测什么的",
 ]
 
 # 知识库**外**的问题 —— 必须拒绝，模型应该回答「知识库未收录」
@@ -47,6 +62,8 @@ OUT_OF_SCOPE = [
     "股票怎么开户",
     "写一首关于春天的诗",
     "怎么用 FC 游戏机",
+    "半导体光刻工艺",
+    "手机电池怎么充电",
 ]
 
 
@@ -54,8 +71,8 @@ def top_score(query: str) -> float:
     rows = _load()
     if not rows:
         return 0.0
-    terms = _tokens(query)
-    return max((_score(terms, c) for c in rows), default=0.0)
+    terms = _content_tokens(query)
+    return max((_score(terms, c, query) for c in rows), default=0.0)
 
 
 def main() -> int:

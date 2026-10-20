@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FeatureProps } from '../../lib/types'
+import { concepts } from './concepts'
 
 type MarkKind = 'vague' | 'jump' | 'good'
 
@@ -132,6 +133,32 @@ export default function Component({ artifact, onSendMessage }: FeatureProps) {
       <div className="sub" style={{ marginBottom: 14 }}>
         用自己的话讲清一个概念，逐轮检查表述和推理
       </div>
+
+      <details style={{ marginBottom: 14 }}>
+        <summary style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 'var(--fs-sm)', padding: '4px 0' }}>
+          没有思路？从这些课程概念开始（{concepts.length} 条）
+        </summary>
+        <div style={{ display: 'grid', gap: 7, marginTop: 8 }}>
+          {concepts.map((item) => (
+            <article key={item.id} style={{
+              padding: '9px 11px', border: '1px solid var(--border-soft)',
+              borderRadius: 'var(--r-md)', background: 'var(--bg-elevated)',
+            }}>
+              <strong style={{ fontSize: 'var(--fs-sm)' }}>{item.concept}</strong>
+              <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-xs)', lineHeight: 1.55, color: 'var(--text-muted)' }}>
+                <strong>常被追问：</strong>{item.blindSpot}
+              </p>
+              <p style={{ margin: '3px 0 0', fontSize: 'var(--fs-xs)', lineHeight: 1.55, color: 'var(--text-faint)' }}>
+                <strong>常见误区：</strong>{item.misconception}
+              </p>
+              <button className="chip" style={{ marginTop: 7 }}
+                onClick={() => onSendMessage(`我想用费曼技巧学习「${item.concept}」。请先让我用自己的话讲，然后从表述模糊点和逻辑跳跃开始追问；至少完成三轮后再给总评。`)}>
+                开始追问
+              </button>
+            </article>
+          ))}
+        </div>
+      </details>
 
       {!data && (
         <div className="box">

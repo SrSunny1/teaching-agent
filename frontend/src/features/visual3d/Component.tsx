@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import type { FeatureProps } from '../../lib/types'
+import { concepts } from './knowledge'
 
 interface Atom { x: number; y: number; z: number }
 interface Site extends Atom { kind: string }
@@ -409,6 +410,30 @@ export default function Component({ artifact, onSendMessage, onEmitArtifact }: F
         onClick={() => onSendMessage(`请结合当前 ${label} 模型，讲解它的原子排列、每晶胞原子数 ${params.atomsPerCell} 和配位数 ${params.coordination}。`)}>
         让 Agent 讲解当前结构
       </button>}
+
+      <details style={{ marginTop: 14 }}>
+        <summary style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 'var(--fs-sm)', padding: '4px 0' }}>
+          晶体学要点 · {concepts.length} 条（点击展开）
+        </summary>
+        <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+          {concepts.map((card) => (
+            <article key={card.id} style={{
+              padding: '10px 11px', border: '1px solid var(--border-soft)',
+              borderRadius: 'var(--r-md)', background: 'var(--bg-elevated)',
+            }}>
+              <strong style={{ fontSize: 'var(--fs-sm)' }}>{card.title}</strong>
+              <p style={{ margin: '5px 0 0', fontSize: 'var(--fs-sm)', lineHeight: 1.6, color: 'var(--text-dim)' }}>{card.fact}</p>
+              <p style={{ margin: '5px 0 0', fontSize: 'var(--fs-xs)', lineHeight: 1.55, color: 'var(--text-muted)' }}>
+                <strong>辨析边界：</strong>{card.caution}
+              </p>
+              <button className="chip" style={{ marginTop: 8 }}
+                onClick={() => onSendMessage(card.question)}>
+                追问 Agent
+              </button>
+            </article>
+          ))}
+        </div>
+      </details>
     </div>
   </div>
 }
