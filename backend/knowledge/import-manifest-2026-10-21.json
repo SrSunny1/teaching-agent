@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-21",
+  "files": [
+    {
+      "id": "0",
+      "name": "第二学期.docx",
+      "sha256": "d199c20c9a132f833c04e7735ad6620c2410f70e8e1b135a0098e341023ce442",
+      "status": "已存在，SHA256一致，不重复导入",
+      "output": "教材.docx"
+    },
+    {
+      "id": "1",
+      "name": "附件1：2026年本科生劳动教育实践特色项目任.doc",
+      "sha256": "6856a2299b657f45afc1c98ab0fdfd3247051b5d6de5958ae2275601375134de",
+      "paragraphs": 59,
+      "exclusions": "任务书个人信息、填表说明、预算和签章不进入教学问答",
+      "status": "已提取文字",
+      "output": "导入原文/01-2026年劳动教育实践特色项目任务书·教学正文.md"
+    },
+    {
+      "id": "2",
+      "name": "附件4：课程教学大纲材料物理实验2.doc",
+      "sha256": "dcf8ccf9eda6b3d8b7301523690214fdaa4eaff4bddb4f3796c440ce0f276134",
+      "paragraphs": 219,
+      "exclusions": "仅提取正文文字，嵌入对象与排版不作推断",
+      "status": "已提取文字",
+      "output": "导入原文/02-附件4：课程教学大纲材料物理实验2·附件版本2.md"
+    },
+    {
+      "id": "3",
+      "name": "金相试样制备2.ppt",
+      "sha256": "4de641bb47c5782f287e8f561465fe1441dffb225f7b6bb5f2539094fd6cf7e5",
+      "pages": 22,
+      "imageOnlyPages": [
+        9,
+        13
+      ],
+      "status": "已提取文字",
+      "output": "导入原文/03-金相试样制备2.md"
+    },
+    {
+      "id": "4",
+      "name": "表面硬度的测定.pptx",
+      "sha256": "a44747eb63ad5a26ae6adc95502db418993b152fdaa178b0ea9a09ab0c4d74fc",
+      "pages": 12,
+      "imageOnlyPages": [],
+      "status": "已提取文字",
+      "output": "导入原文/04-表面硬度的测定.md"
+    },
+    {
+      "id": "5",
+      "name": "膨胀系数测定实验.pptx",
+      "sha256": "f2c059c57f7ad45694a0eac8a2efa024b66fd29e456c3c3b1432cc03942f45da",
+      "pages": 15,
+      "imageOnlyPages": [],
+      "status": "已提取文字",
+      "output": "导入原文/05-膨胀系数测定实验.md"
+    },
+    {
+      "id": "6",
+      "name": "附件4：课程教学大纲材料物理实验2.doc",
+      "sha256": "06dd48f26870dad3768656ee5d52426d55bff1bf5b082da3a5be41ea2ffea330",
+      "paragraphs": 276,
+      "exclusions": "仅提取正文文字，嵌入对象与排版不作推断",
+      "status": "已提取文字",
+      "output": "导入原文/06-附件4：课程教学大纲材料物理实验2·附件版本6.md"
+    },
+    {
+      "id": "7",
+      "name": "附件4：课程教学大纲材料物理实验1.docx",
+      "sha256": "2d47b7caa6977b625f79c16d4fbb37915c61bd81e430881f61395c8d5519466e",
+      "paragraphs": 191,
+      "exclusions": "仅提取正文文字，嵌入对象与排版不作推断",
+      "status": "已提取文字",
+      "output": "导入原文/07-附件4：课程教学大纲材料物理实验1.md"
+    },
+    {
+      "id": "8",
+      "name": "结晶与凝固.pptx",
+      "sha256": "188b40c5b6551cabab8c2ee026dae9c18ef2376ff1f25917537e8ab834a0914c",
+      "pages": 14,
+      "imageOnlyPages": [],
+      "status": "已提取文字",
+      "output": "导入原文/08-结晶与凝固.md"
+    },
+    {
+      "id": "9",
+      "name": "金属材料热处理综合实验.pptx",
+      "sha256": "541950003deea1b107d30192adce0e51566d832fef4eb34592700714cd3a7998",
+      "pages": 14,
+      "imageOnlyPages": [],
+      "status": "已提取文字",
+      "output": "导入原文/09-金属材料热处理综合实验.md"
+    },
+    {
+      "id": "10",
+      "name": "晶体结构与晶体缺陷.pptx",
+      "sha256": "cabd9a50e8735caa9114867e428682de8e5ac23a96d807e4e341f380e48fed77",
+      "pages": 9,
+      "imageOnlyPages": [
+        7,
+        8
+      ],
+      "status": "已提取文字",
+      "output": "导入原文/10-晶体结构与晶体缺陷.md"
+    }
+  ],
+  "limitations": "文字索引不等于完整视觉理解；图片、公式对象和曲线需核对原件。附件版本2和6不推定先后或有效版本，冲突交教师确认。"
+}

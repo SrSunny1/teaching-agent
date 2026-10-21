@@ -162,6 +162,11 @@ cd backend && python tests/retrieval_probe.py
 
 ## 三、契约（Agent ↔ 壳 的唯一接口）
 
+模块可选声明 `answerFromSources(query, offline)`，返回 `{ content, summary }` 或 `null`。
+壳按当前对话所属模块（不是画布）调用；返回结果作为本地资料回答显示，并明确标记非模型调用。
+`null` 保留原有后端/演示路由；没有声明此接口的模块行为不变。不新增后端 SSE 事件。
+模块4精确问答命中时使用同一份本地 `qaData`；未命中且离线时提示资料不足，在线时交给原后端课程检索。
+
 > ⚠️ **改这一节的任何东西都要在群里说一声**（它和 `lib/types.ts`、`backend/app/events.py` 三处同步）。
 
 ### 请求体（`POST /chat`）

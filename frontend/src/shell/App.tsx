@@ -315,6 +315,7 @@ export default function App() {
        *   随后 UI 会自动切到该模块的对话（见下面 artifact 分支），下一轮就带模块 persona 了。
        */
       const mod = featureById(convKey)
+      if (mod?.answerFromSources) setCanvasFull(false)
       const featureCtx = mod
         ? { id: mod.id, title: mod.title, persona: mod.persona }
         : undefined
@@ -388,7 +389,14 @@ export default function App() {
       }
 
       try {
-        if (connection === 'mock') {
+        const local = mod?.answerFromSources?.(q, connection === 'mock')
+        if (local) {
+          const lookupId = uid()
+          onEvent({ type: 'tool_call', id: lookupId, name: 'local_source_lookup', label: '本地资料检索（非模型调用）', args: { query: q } })
+          onEvent({ type: 'tool_result', id: lookupId, summary: local.summary, detail: local.content })
+          onEvent({ type: 'token', text: local.content })
+          onEvent({ type: 'done' })
+        } else if (connection === 'mock') {
           await streamMock(q, onEvent, ctrl.signal)
         } else {
           await streamChat({

@@ -2,10 +2,12 @@
 import type { FeatureModule } from '../../lib/types'
 import Component from './Component'
 import preview from './preview'
+import { answerFromSources } from './chatKnowledge'
 
 const feature: FeatureModule = {
   id: 'module4',
   title: '金相组织辨析',
+  answerFromSources,
   persona: '负责实验四典型材料微观组织的观察、对比与辨析，引导学生说明形态、分布和判断依据。',
   autoOpenCanvas: true,
   // 这个模块负责渲染哪些 artifactType。后端产出同名类型时就会挂到这块画布。

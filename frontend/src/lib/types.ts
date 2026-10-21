@@ -90,6 +90,8 @@ export interface FeatureProps {
 export interface FeatureModule {
   id: string
   title: string
+  /** Optional deterministic source lookup before model/mock routing. Null preserves the existing route. */
+  answerFromSources?: (query: string, offline: boolean) => { content: string; summary: string } | null
 
   /**
    * ★ 给 Agent 的模块身份说明（可选）—— 模块作者写「这个模块在教学上负责什么」。

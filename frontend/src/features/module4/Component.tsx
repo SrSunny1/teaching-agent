@@ -39,7 +39,7 @@ export default function Component({ artifact, onSendMessage, busy }: FeatureProp
     <div className="m4-tabs" role="tablist" aria-label="金相组织辨析视图">{tabs.map((t, i) => <button key={t} id={`m4-tab-${i}`} role="tab" aria-selected={tab === i} aria-controls="m4-panel" onClick={() => setTab(i)}>{t}</button>)}</div>
     <section id="m4-panel" role="tabpanel" aria-labelledby={`m4-tab-${tab}`}>
       {tab === 3 && <KnowledgeLibrary />}
-      {tab === 4 && <QuestionAnswer />}
+      {tab === 4 && <QuestionAnswer onSendMessage={onSendMessage} busy={busy} />}
       {tab === 2 && <Practice Photo={Photo} onSendMessage={onSendMessage} busy={busy} />}
       {tab === 1 && <p className="sub">资料对比不等于图像识别；结果随所选案例生成。</p>}
       {tab === 0 && <>

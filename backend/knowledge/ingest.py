@@ -95,7 +95,29 @@ def read_docx(path: Path) -> list[str]:
     from docx import Document
 
     doc = Document(str(path))
-    return [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+    from docx.oxml.ns import qn
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+
+    out = []
+    for element in doc.element.body:
+        if element.tag == qn("w:p"):
+            text = Paragraph(element, doc).text.strip()
+            if text:
+                out.append(text)
+        elif element.tag == qn("w:tbl"):
+            table = Table(element, doc)
+            for row in table.rows:
+                cells = []
+                seen = set()
+                for cell in row.cells:
+                    if cell._tc in seen:
+                        continue
+                    seen.add(cell._tc)
+                    cells.append(cell.text.strip().replace("\n", "；"))
+                if any(cells):
+                    out.append(" | ".join(cells))
+    return out
 
 
 def read_pptx(path: Path) -> list[str]:
@@ -277,30 +299,33 @@ def chunk(
         emit("\n".join(cur), part)
 
     for para in paragraphs:
-        m_exp = RE_EXPERIMENT.match(para)
-        if m_exp and len(para) < 40:
+        heading = re.sub(r"^【原文段落\d+】", "", para)
+        m_exp = RE_EXPERIMENT.match(heading)
+        if m_exp and len(heading) < 40:
             flush()
             buf = []
             experiment = f"实验{m_exp.group(1)} {m_exp.group(2).strip()}"
             continue
 
         # 任务书的劳育模块：每个模块独立成块，module 字段回填，供劳育挂接使用
-        m_mod = RE_MODULE.match(para)
-        if m_mod and len(para) < 60:
+        m_mod = RE_MODULE.match(heading)
+        if m_mod and len(heading) < 60 and "\t" not in heading:
             flush()
             buf = []
             experiment = f"劳育模块{m_mod.group(1)} {m_mod.group(2).strip()}"
             section = "实验内容"
             continue
 
-        m_sec = RE_SECTION.match(para)
-        if m_sec and len(para) < 24:
+        m_sec = RE_SECTION.match(heading)
+        if m_sec and len(heading) < 50:
             name = m_sec.group(1).strip().rstrip("：:")
             mapped = SECTION_MAP.get(name) or TASK_SECTION_MAP.get(name)
             if mapped:
                 flush()
                 buf = []
                 section = mapped
+                if source == "任务书" and name in TASK_SECTION_MAP:
+                    experiment = "劳育课程总览"
                 continue
 
         buf.append(para)
@@ -314,10 +339,16 @@ def main() -> int:
         print(f"目录不存在：{RAW}")
         return 1
 
+    override_path = RAW.parent / "source-overrides.json"
+    overrides = json.loads(override_path.read_text(encoding="utf-8")) if override_path.exists() else {}
+    for original, replacement in overrides.items():
+        if not (RAW / replacement).is_file():
+            raise ValueError(f"替代正文不存在，停止入库：{original} -> {replacement}")
     files = [
         p
         for p in sorted(RAW.rglob("*"))
         if p.is_file() and p.suffix.lower() in (".docx", ".doc", ".pptx", ".md", ".markdown", ".txt")
+        and p.relative_to(RAW).as_posix() not in overrides
     ]
     if not files:
         print(f"{RAW} 下没有可入库的文件。把教材、讲义、大纲和任务书放进去再跑。")
