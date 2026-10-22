@@ -33,6 +33,16 @@ Start-Process -FilePath "powershell" -ArgumentList @(
     "Set-Location '$PSScriptRoot\backend'; .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000"
 )
 
+# 知识库 RAG 服务：新开一个窗口（材料科学RAG系统 不存在时跳过）
+$RagDir = Join-Path $PSScriptRoot "材料科学RAG系统"
+if (Test-Path (Join-Path $RagDir "start.py")) {
+    Write-Host "  [OK] 启动知识库 RAG 服务（新窗口）  http://127.0.0.1:8765" -ForegroundColor Green
+    Start-Process -FilePath "powershell" -ArgumentList @(
+        "-NoExit", "-Command",
+        "Set-Location '$RagDir'; & '$PSScriptRoot\backend\.venv\Scripts\python.exe' start.py --no-browser"
+    )
+}
+
 # 前端：新开一个窗口
 Write-Host "  [OK] 启动前端（新窗口）  http://localhost:5173" -ForegroundColor Green
 Start-Process -FilePath "powershell" -ArgumentList @(

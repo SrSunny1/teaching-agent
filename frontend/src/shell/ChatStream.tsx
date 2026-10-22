@@ -100,20 +100,22 @@ export default function ChatStream({ messages, onSend }: {
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="chat-inner" style={{ paddingTop: 60 }}>
           <div style={{ textAlign: 'center', marginBottom: 26 }}>
-            <div
+            <img
+              src="/agent-logo.png"
+              alt=""
               style={{
-                width: 44,
-                height: 44,
+                display: 'block',
                 margin: '0 auto 14px',
-                borderRadius: 12,
-                background: 'linear-gradient(135deg, var(--accent), #9d7bff)',
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                objectPosition: '47.5% 50%',
+                boxShadow: '0 8px 28px rgba(96, 68, 200, 0.35)',
               }}
             />
             <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 6 }}>
               材料物理实验教学 Agent
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>
-              知识范围：教材 7 个实验 + 材料物理专业实验1/2 讲义/大纲 + 劳动教育四大模块
             </div>
           </div>
 

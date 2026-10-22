@@ -29,4 +29,4 @@
 | `Component.tsx` | 画布模式下的说明卡 |
 | `index.ts` | 怎么声明 `page` 和 `preview` |
 
-> 整页模式现在由 `features/knowledgeBase/`（知识库）实际使用；pageDemo 只作为参考，不再注册。
+> 整页模式现在由 `features/module2/`（知识库）实际使用；pageDemo 只作为参考，不再注册。

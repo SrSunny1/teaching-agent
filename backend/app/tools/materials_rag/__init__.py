@@ -59,9 +59,11 @@ def _request(method: str, path: str, payload: dict | None = None, timeout: float
 
 def _fmt_chunk(c: dict, i: int) -> str:
     text = (c.get("content") or c.get("text") or c.get("quote") or "").strip()
-    src = c.get("source") or c.get("doc_title") or c.get("document_id") or ""
-    sec = c.get("section") or c.get("section_path") or ""
-    head = f"【{i}】{src}{' · ' + sec if sec else ''}（{c.get('chunk_id', '')}，相关度 {c.get('score', '?')}）"
+    src = c.get("source") or c.get("document_title") or c.get("doc_title") or c.get("document_id") or ""
+    sec = c.get("section_title") or c.get("section") or c.get("section_path") or ""
+    if isinstance(sec, list):  # section_path 是列表，如 ['5 回火']
+        sec = " / ".join(str(s) for s in sec)
+    head = f"【{i}】{src}{' · ' + str(sec) if sec else ''}（{c.get('chunk_id', '')}，相关度 {c.get('score', '?')}）"
     return f"{head}\n{text[:400]}{'…' if len(text) > 400 else ''}"
 
 
@@ -126,7 +128,7 @@ def _run_sync(action: str, args: dict) -> ToolResult:
         cites = data.get("citations") or []
         mode = data.get("generation_mode") or ""
         cite_lines = [
-            f"[{i}] {c.get('chunk_id', '')} · {c.get('source') or c.get('doc_title') or ''}：{(c.get('quote') or '')[:120]}"
+            f"[{i}] {c.get('chunk_id', '')} · {c.get('source') or c.get('document_title') or c.get('doc_title') or ''}：{(c.get('quote') or '')[:120]}"
             for i, c in enumerate(cites, 1)
         ]
         detail = f"（生成模式：{mode} · 模型：{data.get('model') or '未接入'} · 耗时 {data.get('latency_ms', '?')}ms）\n\n{answer}"
@@ -187,7 +189,7 @@ def _run_sync(action: str, args: dict) -> ToolResult:
 
 TOOL = Tool(
     name="materials_rag",
-    label="知识库 · {action}",
+    label="知识库RAG · {action}",
     description=(
         "材料科学 RAG 知识库（用户已有系统）。涉及课程知识、文献、实验讲义内容的问题，"
         "用 action=search 检索原文段落（精确引用时用），action=ask 获取带证据引用的回答；"

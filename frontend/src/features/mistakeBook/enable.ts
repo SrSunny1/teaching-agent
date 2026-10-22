@@ -1,5 +1,5 @@
 /**
- * 插件启用开关 —— 与 knowledgeBase 同一套机制，各自独立，互不影响。
+ * 插件启用开关 —— 与 module2（知识库）同一套机制，各自独立，互不影响。
  * localStorage 键：plugin.mistakeBook.enabled
  */
 const KEY = 'plugin.mistakeBook.enabled'

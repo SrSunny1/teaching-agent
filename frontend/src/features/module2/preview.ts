@@ -1,11 +1,9 @@
-/**
- * 模块2 —— 开发预览数据。
- *
- * 在左栏点这个模块时，画布就用这份数据渲染，**不需要后端、不需要 API Key**。
- * 做组件时先改这里，改完存盘浏览器自动刷新，立刻能看到效果。
- */
-export default {
-  // TODO: 换成你这个模块真实的数据形状
-  placeholder: true,
-  note: '模块2 的样例数据，请在 preview.ts 里替换',
+import type { KbMeta } from './types'
+
+/** 画布预览用的元信息样例（真实状态以运行中的原 RAG 系统为准） */
+export const preview: KbMeta = {
+  app: '材料科学 RAG 知识库',
+  version: '1.0.0',
+  baseUrl: 'http://127.0.0.1:8765',
+  note: '预览数据 · 完整界面（总览/文献库/智能问答/设置）在左栏「知识库RAG」整页中',
 }

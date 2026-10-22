@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ConnectionState, FeatureModule } from '../lib/types'
-import { GLOBAL_CONV, draftId } from '../lib/history'
+import { GLOBAL_CONV } from '../lib/history'
 import type { ConvMeta } from '../lib/history'
 import { IconChat } from './icons'
 
@@ -23,14 +23,16 @@ interface Props {
   connection: ConnectionState
 }
 
-/** 右击菜单的打开状态：作用于哪条会话 + 出现位置 + 是否已点过一次「删除」待确认 */
-interface CtxMenu {
-  id: string
-  title: string
-  x: number
-  y: number
-  confirmDelete?: boolean
-}
+/** 右击菜单：会话条目（重命名/删除）或模块/全局对话行（＋ 新对话） */
+type CtxMenu =
+  | { kind: 'thread'; id: string; title: string; x: number; y: number; confirmDelete?: boolean }
+  | { kind: 'module'; moduleKey: string; x: number; y: number }
+
+/** 贴边点开菜单时往回收，别甩出屏幕 */
+const menuPos = (e: { clientX: number; clientY: number }) => ({
+  x: Math.min(e.clientX, window.innerWidth - 150),
+  y: Math.min(e.clientY, window.innerHeight - 90),
+})
 
 export default function Sidebar({
   onOpenReport,
@@ -73,26 +75,19 @@ export default function Sidebar({
     return (
       <aside className="sidebar">
         <div className="sidebar-head" style={{ justifyContent: 'center', padding: '14px 0 10px' }}>
-          <div className="brand-mark" />
+          <img className="brand-mark" src="/agent-logo.png" alt="" />
         </div>
       </aside>
     )
   }
 
   /**
-   * 某个模块空间下的「＋ 新对话 + 历史会话列表」，只在模块激活时展开。
+   * 某个模块空间下的历史会话列表，只在模块激活时展开。
    * 历史条目右击出上下文菜单：重命名（行内编辑）/ 删除。
+   * 「＋ 新对话」入口挪到模块行的右击菜单里，不再常驻显示。
    */
   const renderThreads = (moduleKey: string) => (
     <>
-      <button
-        className={`nav-item nav-sub${activeConvId === draftId(moduleKey) ? ' active' : ''}`}
-        onClick={() => onNewThread(moduleKey)}
-      >
-        <span className="label" style={{ color: 'var(--text-faint)' }}>
-          ＋ 新对话
-        </span>
-      </button>
       {threads
         .filter((t) => t.moduleKey === moduleKey)
         .map((t) => (
@@ -109,13 +104,7 @@ export default function Sidebar({
             }}
             onContextMenu={(e) => {
               e.preventDefault()
-              // 贴边点开时把菜单往回收，别甩出屏幕
-              setMenu({
-                id: t.id,
-                title: t.title,
-                x: Math.min(e.clientX, window.innerWidth - 150),
-                y: Math.min(e.clientY, window.innerHeight - 90),
-              })
+              setMenu({ kind: 'thread', id: t.id, title: t.title, ...menuPos(e) })
             }}
             title={t.title}
           >
@@ -146,7 +135,7 @@ export default function Sidebar({
     <aside className="sidebar">
       <div className="sidebar-head">
         <div className="brand">
-          <span className="brand-mark" />
+          <img className="brand-mark" src="/agent-logo.png" alt="" />
           <span>材料实验 Agent</span>
         </div>
       </div>
@@ -161,6 +150,10 @@ export default function Sidebar({
         <button
           className={`nav-item${activeModuleKey === GLOBAL_CONV ? ' active' : ''}`}
           onClick={() => onPick(null)}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            setMenu({ kind: 'module', moduleKey: GLOBAL_CONV, ...menuPos(e) })
+          }}
           title="不属于任何模块的通用对话"
         >
           <span style={{ display: 'grid', flexShrink: 0, opacity: 0.75 }}>
@@ -184,6 +177,10 @@ export default function Sidebar({
             <button
               className={`nav-item${activeModuleKey === f.id ? ' active' : ''}`}
               onClick={() => onPick(f)}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                setMenu({ kind: 'module', moduleKey: f.id, ...menuPos(e) })
+              }}
               title={f.title}
             >
               <span className="label">{f.title}</span>
@@ -210,29 +207,43 @@ export default function Sidebar({
             }}
           />
           <div className="ctx-menu" style={{ left: menu.x, top: menu.y }}>
-            <button
-              className="ctx-item"
-              onClick={() => {
-                setRenaming({ id: menu.id, value: menu.title })
-                setMenu(null)
-              }}
-            >
-              重命名
-            </button>
-            <button
-              className={`ctx-item danger${menu.confirmDelete ? ' confirm' : ''}`}
-              onClick={() => {
-                if (!menu.confirmDelete) {
-                  setMenu({ ...menu, confirmDelete: true })
-                  return
-                }
-                const targetId = menu.id
-                setMenu(null)
-                onDeleteThread(targetId)
-              }}
-            >
-              {menu.confirmDelete ? '确认删除？' : '删除'}
-            </button>
+            {menu.kind === 'module' ? (
+              <button
+                className="ctx-item"
+                onClick={() => {
+                  onNewThread(menu.moduleKey)
+                  setMenu(null)
+                }}
+              >
+                ＋ 新对话
+              </button>
+            ) : (
+              <>
+                <button
+                  className="ctx-item"
+                  onClick={() => {
+                    setRenaming({ id: menu.id, value: menu.title })
+                    setMenu(null)
+                  }}
+                >
+                  重命名
+                </button>
+                <button
+                  className={`ctx-item danger${menu.confirmDelete ? ' confirm' : ''}`}
+                  onClick={() => {
+                    if (!menu.confirmDelete) {
+                      setMenu({ ...menu, confirmDelete: true })
+                      return
+                    }
+                    const targetId = menu.id
+                    setMenu(null)
+                    onDeleteThread(targetId)
+                  }}
+                >
+                  {menu.confirmDelete ? '确认删除？' : '删除'}
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

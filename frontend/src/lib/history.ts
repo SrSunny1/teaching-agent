@@ -71,6 +71,25 @@ export function loadStore(): HistoryStore {
     if (!raw) return fallback
     const p = JSON.parse(raw) as Partial<HistoryStore>
 
+    // 模块「knowledgeBase」已迁移为 module2：老历史会话一并改 key，避免变孤儿
+    const mig = <T,>(v: T): T =>
+      typeof v === 'string' ? (v.replace(/:knowledgeBase:/g, ':module2:') as T) : v
+    p.metas = (p.metas ?? []).map((m) =>
+      m && typeof m === 'object'
+        ? { ...m, id: mig(m.id), moduleKey: m.moduleKey === 'knowledgeBase' ? 'module2' : m.moduleKey }
+        : m,
+    )
+    p.conversations = Object.fromEntries(
+      Object.entries(p.conversations ?? {}).map(([k, v]) => [mig(k) as string, v]),
+    )
+    p.currentConv = Object.fromEntries(
+      Object.entries(p.currentConv ?? {}).map(([k, v]) => [
+        k === 'knowledgeBase' ? 'module2' : k,
+        mig(v) as string,
+      ]),
+    )
+    p.activeConvKey = mig(p.activeConvKey) as string
+
     const metas = (p.metas ?? []).filter(
       (m): m is ConvMeta =>
         Boolean(m) && typeof m.id === 'string' && typeof m.moduleKey === 'string',

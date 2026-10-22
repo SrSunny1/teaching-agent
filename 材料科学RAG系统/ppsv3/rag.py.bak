@@ -1,0 +1,615 @@
+import argparse
+import json
+import os
+import re
+import time
+import traceback
+from collections import Counter
+from pathlib import Path
+
+os.environ["FLAGS_use_onednn"] = "False"
+os.environ["FLAGS_use_mkldnn"] = "False"
+os.environ["FLAGS_enable_pir_api"] = "False"
+os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+
+import numpy as np
+from PIL import Image
+from paddleocr import PPStructureV3
+
+BASE_DIR = Path(__file__).resolve().parent
+
+VISUAL_LABELS = {"image", "chart", "table"}
+TITLE_TO_VISUAL = {
+    "figure_title": "image",
+    "chart_title": "chart",
+    "table_title": "table",
+}
+VISUAL_TO_TITLE = {value: key for key, value in TITLE_TO_VISUAL.items()}
+HEADER_FOOTER_LABELS = {"header", "footer", "number", "header_image", "footer_image"}
+TEXTUAL_LABELS = {
+    "doc_title",
+    "paragraph_title",
+    "abstract_title",
+    "reference_title",
+    "content_title",
+    "abstract",
+    "text",
+    "reference",
+    "vision_footnote",
+    "content",
+    "formula",
+    "algorithm",
+    "footnote",
+    "aside_text",
+}
+
+
+def normalize_inline_text(text):
+    return re.sub(r"\s+", " ", (text or "")).strip()
+
+
+def normalize_paragraph_text(text):
+    text = (text or "").replace("\r\n", "\n")
+    return text.strip()
+
+
+def normalize_title_label(label, content):
+    text = normalize_inline_text(content)
+    if re.match(r"^表\s*\d+", text):
+        return "table_title"
+    if re.match(r"^图\s*\d+", text):
+        return "figure_title"
+    return label
+
+
+def should_skip_block(block):
+    label = block.label
+    content = normalize_inline_text(getattr(block, "content", ""))
+
+    if label in HEADER_FOOTER_LABELS:
+        return True
+    if not content and label not in VISUAL_LABELS:
+        return True
+    if re.fullmatch(r"\d+", content):
+        return True
+    if content.startswith("http://") or content.startswith("https://"):
+        return True
+    if "xjtu.edu.cn" in content.replace(" ", "").lower():
+        return True
+    if "西安交通大学学报" in content and len(content) <= 40:
+        return True
+    if "journal of" in content.lower() and len(content) <= 80:
+        return True
+    if re.search(r"第\d+卷第\d+期", content):
+        return True
+    return False
+
+
+def to_markdown_text(block):
+    label = normalize_title_label(block.label, getattr(block, "content", ""))
+    content = normalize_paragraph_text(getattr(block, "content", ""))
+
+    if not content:
+        return ""
+
+    if label == "doc_title":
+        return f"# {normalize_inline_text(content)}"
+    if label in {"paragraph_title", "abstract_title", "reference_title", "content_title"}:
+        return f"## {normalize_inline_text(content)}"
+    if label == "abstract":
+        return content.replace("\n", "\n\n")
+    if label in {"text", "reference", "vision_footnote"}:
+        return content.replace("\n", "\n\n")
+    if label == "content":
+        return content.replace("\n", "  \n")
+    if label == "formula":
+        return f"$${content}$$"
+    if label == "algorithm":
+        return f"```text\n{content}\n```"
+    if label in {"header", "footer", "number", "footnote", "aside_text"}:
+        return content
+    if label in TITLE_TO_VISUAL:
+        tag = label.upper()
+        return f"<{tag}>{normalize_inline_text(content)}</{tag}>"
+    return content
+
+
+def bbox_to_str(bbox):
+    return ",".join(str(int(v)) for v in bbox)
+
+
+def gap_is_reasonable(block_a, block_b, max_gap=80):
+    bbox_a = getattr(block_a, "bbox", None)
+    bbox_b = getattr(block_b, "bbox", None)
+    if not bbox_a or not bbox_b:
+        return True
+    vertical_gap = max(0, max(bbox_b[1] - bbox_a[3], bbox_a[1] - bbox_b[3]))
+    return vertical_gap <= max_gap
+
+
+def blocks_can_merge(first_block, second_block):
+    if first_block.label in TITLE_TO_VISUAL and second_block.label in VISUAL_LABELS:
+        return TITLE_TO_VISUAL[first_block.label] == second_block.label and gap_is_reasonable(
+            first_block, second_block
+        )
+    if first_block.label in VISUAL_LABELS and second_block.label in TITLE_TO_VISUAL:
+        return VISUAL_TO_TITLE[first_block.label] == second_block.label and gap_is_reasonable(
+            first_block, second_block
+        )
+    return False
+
+
+def get_page_image(result):
+    page_image = result["doc_preprocessor_res"]["output_img"]
+    if isinstance(page_image, Image.Image):
+        return page_image
+    if isinstance(page_image, np.ndarray):
+        if page_image.ndim == 3 and page_image.shape[2] == 3:
+            return Image.fromarray(page_image[:, :, ::-1])
+        return Image.fromarray(page_image)
+    raise TypeError("Unsupported page image type.")
+
+
+def ensure_pil_image(image_obj):
+    if isinstance(image_obj, Image.Image):
+        return image_obj
+    if isinstance(image_obj, np.ndarray):
+        if image_obj.ndim == 3 and image_obj.shape[2] == 3:
+            return Image.fromarray(image_obj[:, :, ::-1])
+        return Image.fromarray(image_obj)
+    raise TypeError("Unsupported block image type.")
+
+
+def crop_block_image(result, block, padding=6):
+    if getattr(block, "image", None) and block.image.get("img") is not None:
+        return ensure_pil_image(block.image["img"])
+
+    page_image = get_page_image(result)
+    x1, y1, x2, y2 = [int(v) for v in block.bbox]
+    x1 = max(0, x1 - padding)
+    y1 = max(0, y1 - padding)
+    x2 = min(page_image.width, x2 + padding)
+    y2 = min(page_image.height, y2 + padding)
+    return page_image.crop((x1, y1, x2, y2))
+
+
+def build_visual_block(result, visual_block, title_block=None):
+    page_no = int(result["page_index"]) + 1
+    block_id = int(getattr(visual_block, "index", 0) or 0)
+    visual_kind = visual_block.label
+    title_text = ""
+    if title_block is not None:
+        title_text = normalize_inline_text(getattr(title_block, "content", ""))
+        title_label = normalize_title_label(title_block.label, title_text)
+    else:
+        title_label = None
+
+    screenshot_rel = (
+        Path("archives")
+        / f"page_{page_no:03d}"
+        / f"{visual_kind}_{page_no:03d}_{block_id:04d}.png"
+    )
+    screenshot_rel_str = screenshot_rel.as_posix()
+    screenshot_img = crop_block_image(result, visual_block)
+
+    caption_label = title_label or VISUAL_TO_TITLE[visual_kind]
+    caption_tag = caption_label.upper()
+    block_tag = f"{visual_kind.upper()}_BLOCK"
+    visual_bbox = bbox_to_str(visual_block.bbox)
+
+    block_lines = [
+        (
+            f'<{block_tag} id="{visual_kind}_{page_no:03d}_{block_id:04d}" '
+            f'page="{page_no}" bbox="{visual_bbox}" '
+            f'screenshot="{screenshot_rel_str}">'
+        ),
+        f"![{visual_kind}_{page_no:03d}_{block_id:04d}]({screenshot_rel_str})",
+    ]
+
+    if title_text:
+        block_lines.append(f"<{caption_tag}>{title_text}</{caption_tag}>")
+
+    if visual_kind == "table":
+        table_content = normalize_paragraph_text(getattr(visual_block, "content", ""))
+        if table_content:
+            table_text = extract_table_plain_text(table_content)
+            block_lines.append("<TABLE_HTML>")
+            block_lines.append(table_content)
+            block_lines.append("</TABLE_HTML>")
+            if table_text:
+                block_lines.append("<TABLE_TEXT>")
+                block_lines.append(table_text)
+                block_lines.append("</TABLE_TEXT>")
+    elif visual_kind == "chart":
+        chart_content = normalize_paragraph_text(getattr(visual_block, "content", ""))
+        if chart_content:
+            block_lines.append(f"<CHART_CONTENT>\n{chart_content}\n</CHART_CONTENT>")
+
+    block_lines.append(f"</{block_tag}>")
+
+    metadata = {
+        "id": f"{visual_kind}_{page_no:03d}_{block_id:04d}",
+        "page": page_no,
+        "type": visual_kind,
+        "bbox": list(map(int, visual_block.bbox)),
+        "screenshot": screenshot_rel_str,
+        "title": title_text,
+        "source_label": visual_block.label,
+    }
+    if title_block is not None:
+        metadata["title_bbox"] = list(map(int, title_block.bbox))
+        metadata["title_label"] = caption_label
+    if visual_kind == "table":
+        metadata["table_text"] = extract_table_plain_text(
+            normalize_paragraph_text(getattr(visual_block, "content", ""))
+        )
+
+    return "\n".join(block_lines), screenshot_rel_str, screenshot_img, metadata
+
+
+def extract_table_plain_text(table_content):
+    if not table_content:
+        return ""
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table_content, flags=re.I | re.S)
+    plain_rows = []
+    for row in rows:
+        cells = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", row, flags=re.I | re.S)
+        clean_cells = []
+        for cell in cells:
+            cell_text = re.sub(r"<[^>]+>", " ", cell)
+            cell_text = normalize_inline_text(cell_text)
+            if cell_text:
+                clean_cells.append(cell_text)
+        if clean_cells:
+            plain_rows.append(" | ".join(clean_cells))
+    return "\n".join(plain_rows)
+
+
+def build_text_block(result, text_block):
+    label = normalize_title_label(text_block.label, getattr(text_block, "content", ""))
+    block_text = to_markdown_text(text_block)
+    if not block_text:
+        return "", None
+
+    page_no = int(result["page_index"]) + 1
+    block_id = int(getattr(text_block, "index", 0) or 0)
+    bbox = bbox_to_str(text_block.bbox)
+    block_name = f"text_{page_no:03d}_{block_id:04d}"
+    text_kind = label.upper()
+
+    block_lines = [
+        f'<TEXT_BLOCK id="{block_name}" page="{page_no}" bbox="{bbox}" label="{label}">',
+        f"<{text_kind}>",
+        block_text,
+        f"</{text_kind}>",
+        "</TEXT_BLOCK>",
+    ]
+
+    metadata = {
+        "id": block_name,
+        "page": page_no,
+        "type": "text",
+        "label": label,
+        "bbox": list(map(int, text_block.bbox)),
+        "text": normalize_paragraph_text(getattr(text_block, "content", "")),
+        "markdown_text": block_text,
+    }
+
+    return "\n".join(block_lines), metadata
+
+
+def build_tagged_markdown_page(result):
+    blocks = list(result["parsing_res_list"])
+    page_segments = []
+    extra_images = {}
+    metadata_items = []
+    index = 0
+
+    while index < len(blocks):
+        current = blocks[index]
+        current.label = normalize_title_label(current.label, getattr(current, "content", ""))
+        next_block = blocks[index + 1] if index + 1 < len(blocks) else None
+        if next_block is not None:
+            next_block.label = normalize_title_label(
+                next_block.label, getattr(next_block, "content", "")
+            )
+
+        if should_skip_block(current):
+            index += 1
+            continue
+
+        if (
+            next_block is not None
+            and current.label in TITLE_TO_VISUAL
+            and next_block.label in VISUAL_LABELS
+            and blocks_can_merge(current, next_block)
+        ):
+            merged_text, image_path, image_obj, meta = build_visual_block(
+                result, next_block, current
+            )
+            page_segments.append(merged_text)
+            extra_images[image_path] = image_obj
+            metadata_items.append(meta)
+            index += 2
+            continue
+
+        if current.label in VISUAL_LABELS:
+            title_block = None
+            if (
+                next_block is not None
+                and next_block.label in TITLE_TO_VISUAL
+                and blocks_can_merge(current, next_block)
+            ):
+                title_block = next_block
+            merged_text, image_path, image_obj, meta = build_visual_block(
+                result, current, title_block
+            )
+            page_segments.append(merged_text)
+            extra_images[image_path] = image_obj
+            metadata_items.append(meta)
+            index += 2 if title_block is not None else 1
+            continue
+
+        if current.label in TITLE_TO_VISUAL and next_block is None:
+            index += 1
+            continue
+
+        if current.label in TEXTUAL_LABELS or current.label in TITLE_TO_VISUAL:
+            tagged_text, meta = build_text_block(result, current)
+            if tagged_text:
+                page_segments.append(tagged_text)
+            if meta is not None:
+                metadata_items.append(meta)
+            index += 1
+            continue
+
+        block_text = to_markdown_text(current)
+        if block_text:
+            page_segments.append(block_text)
+        index += 1
+
+    return "\n\n".join(page_segments).strip(), extra_images, metadata_items
+
+
+def create_pipeline(
+    device="cpu",
+    use_chart_recognition=True,
+    use_formula_recognition=True,
+    use_table_recognition=True,
+    enable_mkldnn=False,
+):
+    """构建 PP-StructureV3 流水线。
+
+    enable_mkldnn 默认为 False（安全优先）
+    -------------------------------------
+    paddle 3.3.x + Windows CPU 下，oneDNN 执行某些版面模型时会抛
+        NotImplementedError: ConvertPirAttribute2RuntimeAttribute not support
+        [pir::ArrayAttribute<pir::DoubleAttribute>]  (onednn_instruction.cc:118)
+    这个开关会让 paddleocr 把 run_mode 设为 "paddle"，绕开 oneDNN 路径。
+
+    注意：文件顶部设置的 FLAGS_use_mkldnn 环境变量对 paddlex 3.x 已不再生效，
+    它改用 PaddlePredictorOption 控制，必须走这个参数。
+
+    代价：纯 CPU 推理会慢一些（oneDNN 通常有 2~5 倍加速）。
+    若你的环境 oneDNN 正常，加 --enable-mkldnn 换回速度。
+    """
+    return PPStructureV3(
+        use_doc_orientation_classify=True,
+        use_doc_unwarping=True,
+        use_textline_orientation=True,
+        use_table_recognition=use_table_recognition,
+        use_chart_recognition=use_chart_recognition,
+        use_formula_recognition=use_formula_recognition,
+        device=device,
+        enable_mkldnn=enable_mkldnn,
+    )
+
+
+def collect_quality_summary(pdf_path, markdown_path, structured_blocks, elapsed_seconds, status):
+    type_counts = Counter(item.get("type", "unknown") for item in structured_blocks)
+    label_counts = Counter(item.get("label", item.get("type", "unknown")) for item in structured_blocks)
+    text_chars = sum(len(item.get("text", "")) for item in structured_blocks if item.get("type") == "text")
+    visual_blocks = [item for item in structured_blocks if item.get("type") in VISUAL_LABELS]
+    table_blocks = [item for item in structured_blocks if item.get("type") == "table"]
+    titled_visual_blocks = [item for item in visual_blocks if item.get("title")]
+    table_text_blocks = [item for item in table_blocks if item.get("table_text")]
+    markdown_chars = markdown_path.stat().st_size if markdown_path.exists() else 0
+
+    return {
+        "status": status,
+        "pdf": str(pdf_path),
+        "markdown": str(markdown_path),
+        "elapsed_seconds": round(elapsed_seconds, 3),
+        "block_count": len(structured_blocks),
+        "text_chars": text_chars,
+        "markdown_bytes": markdown_chars,
+        "type_counts": dict(type_counts),
+        "label_counts": dict(label_counts),
+        "visual_block_count": len(visual_blocks),
+        "titled_visual_block_count": len(titled_visual_blocks),
+        "title_binding_rate": round(len(titled_visual_blocks) / len(visual_blocks), 4)
+        if visual_blocks
+        else None,
+        "table_block_count": len(table_blocks),
+        "table_text_block_count": len(table_text_blocks),
+        "table_text_rate": round(len(table_text_blocks) / len(table_blocks), 4)
+        if table_blocks
+        else None,
+    }
+
+
+def parse_pdf(
+    input_pdf,
+    output_dir,
+    pipeline=None,
+    device="cpu",
+    use_chart_recognition=True,
+    use_formula_recognition=True,
+    use_table_recognition=True,
+    enable_mkldnn=False,
+):
+    input_pdf = Path(input_pdf).resolve()
+    output_dir = Path(output_dir).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    started = time.perf_counter()
+    pipeline = pipeline or create_pipeline(
+        device=device,
+        use_chart_recognition=use_chart_recognition,
+        use_formula_recognition=use_formula_recognition,
+        use_table_recognition=use_table_recognition,
+        enable_mkldnn=enable_mkldnn,
+    )
+    results = list(pipeline.predict(str(input_pdf)))
+    if not results:
+        raise RuntimeError(f"No parsing result was produced for PDF: {input_pdf}")
+
+    markdown_pages = []
+    image_dicts = []
+    structured_blocks = []
+
+    for res in results:
+        md_info = dict(res.markdown)
+        tagged_text, extra_images, metadata_items = build_tagged_markdown_page(res)
+        md_info["markdown_texts"] = tagged_text
+        md_info["markdown_images"] = dict(md_info.get("markdown_images", {}))
+        md_info["markdown_images"].update(extra_images)
+
+        markdown_pages.append(md_info)
+        image_dicts.append(md_info["markdown_images"])
+        structured_blocks.extend(metadata_items)
+
+    markdown_path = output_dir / f"{input_pdf.stem}.md"
+    final_markdown = pipeline.concatenate_markdown_pages(markdown_pages)
+    markdown_text = getattr(final_markdown, "markdown_texts", None)
+    if markdown_text is None:
+        markdown_text = "\n\n".join(
+            md_info.get("markdown_texts", "") for md_info in markdown_pages
+        ).strip()
+    markdown_path.write_text(str(markdown_text), encoding="utf-8")
+    if markdown_path.stat().st_size == 0:
+        raise RuntimeError(f"Markdown output is empty for PDF: {input_pdf}")
+
+    for img_map in image_dicts:
+        for rel_path, img in img_map.items():
+            img_path = output_dir / rel_path
+            img_path.parent.mkdir(parents=True, exist_ok=True)
+            img.save(img_path)
+
+    metadata_path = output_dir / f"{input_pdf.stem}_blocks.json"
+    with metadata_path.open("w", encoding="utf-8") as f:
+        json.dump(structured_blocks, f, ensure_ascii=False, indent=2)
+
+    elapsed = time.perf_counter() - started
+    quality_summary = collect_quality_summary(
+        input_pdf, markdown_path, structured_blocks, elapsed, status="success"
+    )
+    quality_path = output_dir / f"{input_pdf.stem}_quality.json"
+    with quality_path.open("w", encoding="utf-8") as f:
+        json.dump(quality_summary, f, ensure_ascii=False, indent=2)
+
+    return {
+        **quality_summary,
+        "output_dir": str(output_dir),
+        "metadata": str(metadata_path),
+        "quality_report": str(quality_path),
+    }
+
+
+def parse_pdf_safely(
+    input_pdf,
+    output_dir,
+    pipeline=None,
+    device="cpu",
+    use_chart_recognition=True,
+    use_formula_recognition=True,
+    use_table_recognition=True,
+    enable_mkldnn=False,
+):
+    try:
+        return parse_pdf(
+            input_pdf,
+            output_dir,
+            pipeline=pipeline,
+            device=device,
+            use_chart_recognition=use_chart_recognition,
+            use_formula_recognition=use_formula_recognition,
+            use_table_recognition=use_table_recognition,
+            enable_mkldnn=enable_mkldnn,
+        )
+    except Exception as exc:
+        input_pdf = Path(input_pdf).resolve()
+        output_dir = Path(output_dir).resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        error_report = {
+            "status": "failed",
+            "pdf": str(input_pdf),
+            "output_dir": str(output_dir),
+            "error": repr(exc),
+            "traceback": traceback.format_exc(),
+        }
+        quality_path = output_dir / f"{input_pdf.stem}_quality.json"
+        with quality_path.open("w", encoding="utf-8") as f:
+            json.dump(error_report, f, ensure_ascii=False, indent=2)
+        return {**error_report, "quality_report": str(quality_path)}
+
+
+def build_arg_parser():
+    parser = argparse.ArgumentParser(description="Parse one PDF with PP-StructureV3.")
+    parser.add_argument(
+        "pdf",
+        nargs="?",
+        default=str(BASE_DIR / "统筹推进教育科技人才体制机制一体改革的学理阐释与关键突破_NormalPdf.pdf"),
+        help="PDF file to parse.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=str(BASE_DIR / "output"),
+        help="Directory for markdown, block metadata, images, and quality report.",
+    )
+    parser.add_argument("--device", default="cpu", help="PaddleOCR device, for example cpu or gpu:0.")
+    parser.add_argument(
+        "--disable-chart-recognition",
+        action="store_true",
+        help="Disable PP-Chart2Table to reduce memory usage.",
+    )
+    parser.add_argument(
+        "--disable-formula-recognition",
+        action="store_true",
+        help="Disable formula recognition to reduce runtime and memory usage.",
+    )
+    parser.add_argument(
+        "--disable-table-recognition",
+        action="store_true",
+        help="Disable table recognition to reduce runtime and memory usage.",
+    )
+    parser.add_argument(
+        "--enable-mkldnn",
+        action="store_true",
+        help=(
+            "Enable oneDNN(MKLDNN) acceleration. Faster on CPU (often 2-5x), but "
+            "paddle 3.3.x on Windows may crash with 'ConvertPirAttribute2RuntimeAttribute "
+            "not support'. Disabled by default for reliability."
+        ),
+    )
+    return parser
+
+
+def main():
+    args = build_arg_parser().parse_args()
+    result = parse_pdf_safely(
+        args.pdf,
+        args.output_dir,
+        device=args.device,
+        use_chart_recognition=not args.disable_chart_recognition,
+        use_formula_recognition=not args.disable_formula_recognition,
+        use_table_recognition=not args.disable_table_recognition,
+        enable_mkldnn=args.enable_mkldnn,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    if result["status"] != "success":
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

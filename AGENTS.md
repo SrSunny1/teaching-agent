@@ -19,17 +19,16 @@
 | 编号 | 模块名 | 任务书 | 负责人 |
 |---|---|---|---|
 | 1 | 模块 1（待定） | `frontend/src/features/module1/AGENTS.md` | A |
-| 2 | 模块 2（待定） | `frontend/src/features/module2/AGENTS.md` | A |
+| 2 | **知识库** | `frontend/src/features/module2/AGENTS.md` | **周星宇** |
 | 3 | **材料科学错题集** | `frontend/src/features/mistakeBook/AGENTS.md` | **周星宇（B）** |
 | 4 | **金相组织辨析** | `frontend/src/features/module4/AGENTS.md` | B |
 | **7** | **3D 可视化** | `frontend/src/features/visual3d/AGENTS.md` | **SrSunny1** |
 | **8** | **费曼追问** | `frontend/src/features/feynman/AGENTS.md` | **SrSunny1** |
-| **9** | **知识库** | `frontend/src/features/knowledgeBase/AGENTS.md` | **周星宇** |
 
-> 📌 **mistakeBook / knowledgeBase / visual3d / feynman / module4 已定名**，模块 1、2 仍是编号占位。
+> 📌 **mistakeBook / module2（知识库）/ visual3d / feynman / module4 已定名**，模块 1 仍是编号占位。
 > 原模块 3 已由「材料科学错题集」取代；原模块 5、6 已删除；`pageDemo` 已移到
 > `frontend/src/reference/pageDemo/`，不再注册到左栏。
-> 模块 1、2 定名之后，改三处：各任务书的「模块名」行、`CODEOWNERS` 的路径、本表。
+> 模块 1 定名之后，改三处：各任务书的「模块名」行、`CODEOWNERS` 的路径、本表。
 > 用 `python scripts/module.py list` 随时核对当前状态。
 
 > ⚠️ **`CODEOWNERS` 是给 GitHub 用的**（决定谁的 PR 该找谁 review），
@@ -101,12 +100,11 @@ export default {
 | artifactType | 模块 | 数据形状 |
 |---|---|---|
 | `module1` | 模块 1（名字待定） | 【待填 —— 在该模块任务书的「数据形状」一节写】 |
-| `module2` | 模块 2（名字待定） | 【待填】 |
+| `module2` | 知识库 | 画布预览用元信息；整页由原 RAG 系统提供 |
 | `mistakeBook` | 材料科学错题集 | 见 `frontend/src/features/mistakeBook/AGENTS.md` |
 | `module4` | 金相组织辨析 | 见 `frontend/src/features/module4/` 的 `caseId` 等字段 |
 | `visual3d` | 3D 可视化 | `{structure, feature, atoms:[{x,y,z}], bonds:[[i,j]], sites, cell, stacking, params}` |
 | `feynman` | 费曼追问 | `{concept, rounds:[{question,userAnswer,critique,annotated:[{text,kind,note}]}], score, overall, suggestions}` |
-| `knowledgeBase` | 知识库 | 画布预览用元信息；整页由原 RAG 系统提供 |
 
 > 📌 **这张表是全项目的契约表。** 每个模块的数据形状定下来后，**同步填进来**，
 > 并在群里说一声 —— 前后端都按这张表对字段。

@@ -43,10 +43,9 @@ const MODULE_ALIASES: Record<string, string[]> = {
   visual3d: ['3d', '3d可视化', '可视化', '晶体结构', '晶胞', '三维', '晶体'],
   feynman: ['费曼', '费曼追问', '追问', '费曼学习法'],
   mistakeBook: ['错题', '错题集', '错题本', '材料科学错题集'],
-  knowledgeBase: ['知识库', 'rag', '材料科学rag', '构建你的知识库'],
+  module2: ['知识库', 'rag', '材料科学rag', '构建你的知识库', '模块2', '模块二'],
   module4: ['金相', '金相组织', '组织辨析', '金相组织辨析', '微观组织', '金相分析'],
   module1: ['模块1', '模块一'],
-  module2: ['模块2', '模块二'],
 }
 
 const NAV_VERBS = [
@@ -177,7 +176,10 @@ export default function App() {
   const [modelName, setModelName] = useState('')
   const [stats, setStats] = useState<SessionStats>({})
   useEffect(() => { window.dispatchEvent(new CustomEvent('account:busy', { detail: busy })) }, [busy])
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('mse-agent.theme')
+    return saved === 'dark' || saved === 'light' ? saved : 'light'
+  })
 
   const messages = conversations[activeConvKey] ?? []
   const messagesRef = useRef<Message[]>([])
@@ -232,6 +234,7 @@ export default function App() {
   /* ── 主题落到 <html data-theme> ── */
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    localStorage.setItem('mse-agent.theme', theme)
   }, [theme])
 
   useEffect(() => {

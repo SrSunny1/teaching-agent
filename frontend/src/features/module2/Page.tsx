@@ -118,7 +118,7 @@ export function Page(_props: FeatureProps) {
         <div className="kb-pos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="kb-card">
             <h2>插件已禁用</h2>
-            <p>「知识库」当前处于关闭状态，启用后即可 1:1 内嵌原「材料科学RAG系统」界面。</p>
+            <p>「知识库RAG」当前处于关闭状态，启用后即可 1:1 内嵌原「材料科学RAG系统」界面。</p>
             <div className="kb-actions">
               <button className="kb-btn" onClick={() => toggleEnabled(true)}>
                 启用插件
@@ -138,7 +138,7 @@ export function Page(_props: FeatureProps) {
 
       {/* 顶栏：状态 + 地址 + 新窗口打开 */}
       <div className="kb-bar">
-        <b>知识库</b>
+        <b>知识库RAG</b>
         <span className={`kb-dot ${status}`} />
         <span className="kb-state">{stateText} · 材料科学 RAG 知识库</span>
         <span className="grow" />
@@ -196,7 +196,7 @@ export function Page(_props: FeatureProps) {
         {status === 'unreachable' && (
           <div className="kb-veil">
             <div className="kb-card">
-              <h2>知识库服务未启动</h2>
+              <h2>知识库RAG 服务未启动</h2>
               <p>
                 本页面直接呈现你已有的「材料科学RAG系统」界面，需要先把它启动起来：
               </p>

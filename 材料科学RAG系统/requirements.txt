@@ -1,0 +1,75 @@
+# ---------------------------------------------------------------------------
+# 材料科学 RAG 知识库 —— 依赖说明
+#
+# 核心功能对第三方包 **零依赖**，只使用 Python 标准库。
+# 这个文件里列出的全部是「装了更好」的可选增强，不装也能正常运行。
+#
+# 最小可用：什么都不装，直接 python start.py
+# 推荐配置：pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+
+# 【强烈建议】PDF 文本抽取。这是影响解析质量最大的一项，不装会让 PDF 全部
+# 掉到内置解析器上——后者会在字符间插入伪空格（"STM3 2"、"htt p://"），
+# 且对部分字体编码整篇抽不出字。详见 README「PDF 解析质量」一节。
+pypdf>=4.0
+
+# 向量检索加速（把线性扫描换成矩阵运算）。缺失时自动退回纯 Python 实现。
+numpy>=1.24
+
+# ---------------------------------------------------------------------------
+# 以下为重量级可选项，按需单独安装（会拉取 GB 级模型/框架，不建议默认安装）
+# ---------------------------------------------------------------------------
+
+# 扫描件（图片型 PDF）的 OCR 版面解析。
+# 安装后需在 .env 中设置 MSRAG_PARSER_MODE=paddle
+# pip install paddleocr
+# paddleocr 需搭配 paddlepaddle：
+#   pip install paddlepaddle          （CPU 版）
+
+# 本地语义向量模型（替代远端 embedding API）。
+# 安装后 .env 中设置 MSRAG_EMBEDDING_PROVIDER=local
+# pip install sentence-transformers
+# 或：pip install FlagEmbedding
+
+# ---------------------------------------------------------------------------
+# ppsV3 版面解析（ppsv3/rag.py）——注意：需要「另一个」Python 环境
+# ---------------------------------------------------------------------------
+# PP-StructureV3 只支持 Python 3.9 ~ 3.11，无法与插件主体（3.12+）装进同一个
+# 解释器。适配器以子进程方式调用它，所以要准备一个独立的兼容环境。
+#
+# ── 已验证可行的组合（GPU，RTX 5070 / Blackwell sm_120，强烈推荐照抄）──────
+#
+#   py -3.9 -m venv .venv
+#   .venv\Scripts\python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
+#       "paddlepaddle-gpu==3.2.1"                 # CUDA 12.9 wheel，需从官网源装：
+#       # 若镜像源没有该版本，改用：
+#       #   pip install paddlepaddle-gpu==3.2.1 -i https://www.paddlepaddle.org.cn/packages/stable/cu129/
+#   .venv\Scripts\python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
+#       "paddleocr==3.4.1" "paddlex[ocr]==3.4.3" "numpy==2.0.2" "pillow==11.3.0" \
+#       "opencv-contrib-python==4.10.0.84" "pypdfium2==5.7.0"
+#
+# 验证：
+#   .venv\Scripts\python -c "import paddle;print(paddle.__version__, paddle.device.is_compiled_with_cuda(), paddle.device.cuda.device_count())"
+#   期望输出：3.2.1 True 1
+#
+# 然后在「设置 → ppsV3 版面解析」填入解释器路径、设备填 gpu:0、打开开关。
+#
+# ── 三个高频坑 ────────────────────────────────────────────────────────────
+# 1. cv2 装了一半：
+#      ImportError: recursion is detected during loading of "cv2"
+#    成因是多个 OpenCV 发行版（contrib / headless）互相覆盖，把 .pyd 弄没了。
+#    解决：pip install --only-binary=:all: --force-reinstall opencv-contrib-python==4.10.0.84
+#
+# 2. paddlepaddle 太旧（<3.0）配 paddleocr 3.4：
+#      'AnalysisConfig' object has no attribute 'set_optimization_level'
+#    解决：升级 paddlepaddle 到 3.2.x（见上方组合）
+#
+# 3. 模型权重残缺：
+#      No valid PaddlePaddle model found
+#    ~/.paddlex/official_models/<模型名>/ 下缺 inference.pdiparams，而"下载完成"
+#    标记 .msc 还在，paddlex 不会自愈。解决：删掉那个模型目录，下次自动重下。
+#
+# 另：paddle 3.3+ 在 CPU 上加载 PIR 格式模型会触发 oneDNN 崩溃
+#   （ConvertPirAttribute2RuntimeAttribute not support）。
+#   rag.py 默认不传 enable_mkldnn（与验证过的组合一致）；仅 CPU 推理且崩溃时
+#   再加 --disable-mkldnn。GPU 下该参数本就不生效。
