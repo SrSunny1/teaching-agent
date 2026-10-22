@@ -11,6 +11,18 @@ import type {
 import { featureByArtifact, featureById, features } from '../lib/registry'
 import { probeBackend, streamChat } from '../lib/sse'
 import { streamMock } from '../lib/mock'
+import {
+  GLOBAL_CONV,
+  convTitle,
+  draftId,
+  isDraftId,
+  loadStore,
+  moduleKeyOf,
+  newConvId,
+  resolveConvKey,
+  saveStore,
+} from '../lib/history'
+import type { ConvMeta } from '../lib/history'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import ChatStream from './ChatStream'
@@ -18,11 +30,7 @@ import Composer from './Composer'
 import ArtifactPanel from './ArtifactPanel'
 import StatusBar from './StatusBar'
 
-let seq = 0
-const uid = () => `m${++seq}`
-
-/** 全局对话（不在任何模块里）的 key */
-const GLOBAL_CONV = '__global__'
+const uid = () => `m_${crypto.randomUUID()}`
 
 /**
  * 模块导航的别名表。
@@ -135,16 +143,18 @@ function mergeEvent(m: Message, e: SSEEvent): Message {
 
 export default function App() {
   /**
-   * ★ 每个模块一条独立的对话（协作时不会搅在一起）。
-   * key = 模块 id，或 GLOBAL_CONV（不属于任何模块的通用对话）。
+   * ★ 历史对话（DeepSeek/Codex 式）：每个模块下可挂多条会话，持久化在 localStorage。
+   *   conversations 的 key = conv id（`conv:<moduleKey>:<rand>`），moduleKey 编码在 id 里；
+   *   `draft:<moduleKey>` 是「新对话」空草稿，发出第一条消息才 materialize 落库。
+   *   当前在哪个模块空间由 activeConvKey 纯函数推出：moduleKeyOf(activeConvKey)。
    */
-  const [conversations, setConversations] = useState<Record<string, Message[]>>({
-    [GLOBAL_CONV]: [],
-  })
-  const [activeConvKey, setActiveConvKey] = useState<string>(GLOBAL_CONV)
+  const [initial] = useState(loadStore)
+  const [conversations, setConversations] = useState<Record<string, Message[]>>(initial.conversations)
+  const [metas, setMetas] = useState<ConvMeta[]>(initial.metas)
+  const [currentConv, setCurrentConv] = useState<Record<string, string>>(initial.currentConv)
+  const [activeConvKey, setActiveConvKey] = useState<string>(initial.activeConvKey)
 
   const [artifact, setArtifact] = useState<Artifact | null>(null)
-  const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null)
   /**
    * 右栏画布是否展开。
    *
@@ -170,8 +180,22 @@ export default function App() {
   const messagesRef = useRef<Message[]>([])
   messagesRef.current = messages
 
+  /** 当前所在的模块空间（conv/draft id 里自带 moduleKey，纯函数推出） */
+  const activeModuleKey = moduleKeyOf(activeConvKey)
+
+  /** 左栏历史列表：按最近使用倒序 */
+  const threads = useMemo(() => [...metas].sort((a, b) => b.updatedAt - a.updatedAt), [metas])
+
+  /* ── 历史落库：变更后防抖 400ms 写 localStorage ── */
+  useEffect(() => {
+    const t = setTimeout(() => {
+      saveStore({ conversations, metas, currentConv, activeConvKey })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [conversations, metas, currentConv, activeConvKey])
+
   /** 当前对话的 key —— 发送时捕获它，保证回复写回原来的对话，而不是写到用户已切走的那条 */
-  const convKeyRef = useRef<string>(GLOBAL_CONV)
+  const convKeyRef = useRef<string>(initial.activeConvKey)
   convKeyRef.current = activeConvKey
 
   /**
@@ -181,7 +205,7 @@ export default function App() {
    * 我们会把这条对话整体搬进该模块、并自动切过去；后续 token 必须继续写到新 key，
    * 否则用户会看到模块对话一直空着、答案还在全局对话里流。
    */
-  const streamConvKeyRef = useRef<string>(GLOBAL_CONV)
+  const streamConvKeyRef = useRef<string>(initial.activeConvKey)
 
   const setConv = useCallback((key: string, updater: (prev: Message[]) => Message[]) => {
     setConversations((prev) => ({ ...prev, [key]: updater(prev[key] ?? []) }))
@@ -255,12 +279,9 @@ export default function App() {
 
   /* ── 当前画布上该显示哪个功能 ── */
   const activeFeature: FeatureModule | undefined = useMemo(() => {
-    if (activeFeatureId) {
-      const f = featureById(activeFeatureId)
-      if (f) return f
-    }
+    if (activeModuleKey !== GLOBAL_CONV) return featureById(activeModuleKey)
     return artifact ? featureByArtifact(artifact.artifactType) : undefined
-  }, [activeFeatureId, artifact])
+  }, [activeModuleKey, artifact])
 
   // 画布上现在展示的是样例数据还是 Agent 真实产出？
   // 用引用相等判断：真实 artifact 事件带的是新对象，不会等于 preview 常量。
@@ -284,29 +305,46 @@ export default function App() {
       // 只发一张图、不打字也是合法的（「这张金相有什么缺陷？」可以省略）
       if ((!trimmed && !image) || busy) return
 
-      // ★ 模块导航意图：先切对话，再把剩下的内容作为该模块的第一句话发出去。
-      //   例如「进入错题集，帮我分析第三题」→ 切到错题集，发送「帮我分析第三题」。
-      let content = trimmed
+      // ★ 模块导航意图：先切对话，再把原文发给目标模块（剥词只用来判「是否纯导航」）。
+      //   例如「进入错题集，帮我分析第三题」→ 切到错题集并发出原句；「进入错题集」→ 只切不发。
       if (!image) {
         const intent = detectModuleIntent(trimmed)
-        if (intent) {
-          const targetId = intent.moduleId
-          const target = targetId === GLOBAL_CONV ? null : featureById(targetId)
-          const prevKey = convKeyRef.current
-          setActiveFeatureId(target ? target.id : null)
-          setActiveConvKey(targetId)
-          convKeyRef.current = targetId
+        // ★ 只有「真的要换模块空间」才按导航处理 —— 已在目标模块里就原样发送。
+        //   否则「可视化SC」会被当成导航、剥掉模块名后只剩「SC」发给模型：
+        //   气泡里显示的不是用户打的字，模型拿到的上下文也太残缺。
+        if (intent && intent.moduleId !== moduleKeyOf(convKeyRef.current)) {
+          const mk = intent.moduleId
+          const target = mk === GLOBAL_CONV ? null : featureById(mk)
+          const convId = resolveConvKey(mk, metas, currentConv)
+          setActiveConvKey(convId)
+          setCurrentConv((p) => ({ ...p, [mk]: convId }))
+          convKeyRef.current = convId
           setPanelOpen(Boolean(target?.autoOpenCanvas))
-          if (prevKey !== targetId) setArtifact(null)
+          setArtifact(null)
+          // 剥词只用来判「是否纯导航」（「进入错题集」这种没有正文，只切不发）；
+          // 真正要发的还是原文 —— 「可视化SC」给模型的信息远多于剥剩的「SC」。
           if (!intent.rest) return
-          content = intent.rest
         }
       }
 
-      const q = content.trim()
+      const q = trimmed
       if (!q && !image) return
 
-      const convKey = convKeyRef.current
+      // ★ 草稿在发出第一条消息时才 materialize 成真实会话 —— 否则左栏会堆满空的「新对话」
+      const mk = moduleKeyOf(convKeyRef.current)
+      let convKey = convKeyRef.current
+      if (isDraftId(convKey)) {
+        convKey = newConvId(mk)
+        setMetas((p) => [
+          ...p,
+          { id: convKey, moduleKey: mk, title: convTitle(q), updatedAt: Date.now() },
+        ])
+        setCurrentConv((p) => ({ ...p, [mk]: convKey }))
+        setActiveConvKey(convKey)
+        convKeyRef.current = convKey
+      } else {
+        setMetas((p) => p.map((m) => (m.id === convKey ? { ...m, updatedAt: Date.now() } : m)))
+      }
       streamConvKeyRef.current = convKey
 
       /*
@@ -314,7 +352,7 @@ export default function App() {
        *   全局对话里如果触发了某个模块的 artifact，本轮仍按全局身份作答；
        *   随后 UI 会自动切到该模块的对话（见下面 artifact 分支），下一轮就带模块 persona 了。
        */
-      const mod = featureById(convKey)
+      const mod = featureById(mk)
       if (mod?.answerFromSources) setCanvasFull(false)
       const featureCtx = mod
         ? { id: mod.id, title: mod.title, persona: mod.persona }
@@ -346,24 +384,47 @@ export default function App() {
           if (!owner) return
 
           setArtifact({ artifactType: e.artifactType, data: e.data })
-          setActiveFeatureId(owner.id)
 
-          // ★ 全局对话里触发了模块产物：把整条对话搬进该模块，并自动切过去。
-          //   后续 token 继续写到新 key（streamConvKeyRef），所以答案不会留在全局对话里。
+          // ★ 全局对话里触发了模块产物：把整条对话搬进该模块的当前会话（没有就现开一条），
+          //   并自动切过去。后续 token 继续写到新 key（streamConvKeyRef）。
+          //   源会话整条删除而不是留空 —— 否则左栏会多出一条空历史。
           //   只有用户此刻仍停留在全局对话才搬；如果他已经手动切走，不要把人拽回来。
           const fromGlobal =
-            streamConvKeyRef.current === GLOBAL_CONV && convKeyRef.current === GLOBAL_CONV
+            moduleKeyOf(streamConvKeyRef.current) === GLOBAL_CONV &&
+            moduleKeyOf(convKeyRef.current) === GLOBAL_CONV
           if (fromGlobal && owner.id !== GLOBAL_CONV) {
-            const target = owner.id
+            const mkTarget = owner.id
+            const srcId = streamConvKeyRef.current
+            let targetId = currentConv[mkTarget]
+            if (!targetId || isDraftId(targetId) || !metas.some((m) => m.id === targetId)) {
+              targetId = newConvId(mkTarget)
+            }
+            const tid = targetId
+            const firstUser = history.find((m) => m.role === 'user')?.content ?? ''
             setConversations((prev) => {
-              const moved = prev[GLOBAL_CONV] ?? []
+              const moved = prev[srcId] ?? []
               if (moved.length === 0) return prev
-              // 模块里可能已经有历史对话：把全局这条接在后面，别覆盖掉。
-              return { ...prev, [target]: [...(prev[target] ?? []), ...moved], [GLOBAL_CONV]: [] }
+              const next = { ...prev, [tid]: [...(prev[tid] ?? []), ...moved] }
+              delete next[srcId]
+              return next
             })
-            streamConvKeyRef.current = target
-            convKeyRef.current = target
-            setActiveConvKey(target)
+            setMetas((prev) => {
+              const kept = prev.filter((m) => m.id !== srcId)
+              return kept.some((m) => m.id === tid)
+                ? kept.map((m) => (m.id === tid ? { ...m, updatedAt: Date.now() } : m))
+                : [
+                    ...kept,
+                    { id: tid, moduleKey: mkTarget, title: convTitle(firstUser), updatedAt: Date.now() },
+                  ]
+            })
+            setCurrentConv((p) => ({
+              ...p,
+              [GLOBAL_CONV]: draftId(GLOBAL_CONV),
+              [mkTarget]: tid,
+            }))
+            streamConvKeyRef.current = tid
+            convKeyRef.current = tid
+            setActiveConvKey(tid)
             // 与左栏点模块一致：展示型模块自动展开画布，对话型模块保持收起。
             setPanelOpen(Boolean(owner.autoOpenCanvas))
           } else if (owner.autoOpenCanvas) {
@@ -426,37 +487,92 @@ export default function App() {
         setStats((s) => ({ ...s, activeTool: undefined, elapsedMs: Math.round(performance.now() - t0) }))
       }
     },
-    [busy, connection, conversations, setConv],
+    [busy, connection, conversations, metas, currentConv, setConv],
   )
 
   /**
-   * 点模块 = 进入该模块的对话。
+   * 点模块 = 进入该模块空间的当前对话（上次用的那条 → 最新历史 → 空草稿）。
    * ★ 不自动加载 preview —— 可视化要等对话触发，否则会盖住真正的对话意图。
    *   想看样例数据，画布空态里有个按钮。
    */
-  const handlePickFeature = useCallback((f: FeatureModule | null) => {
-    // 这一跳要切到哪个对话。跟 Sidebar 的高亮（activeId={activeConvKey}）用的是同一个值。
-    const nextKey = f ? f.id : GLOBAL_CONV
+  const handlePickFeature = useCallback(
+    (f: FeatureModule | null) => {
+      const mk = f ? f.id : GLOBAL_CONV
+      const convId = resolveConvKey(mk, metas, currentConv)
+      if (convId !== currentConv[mk]) setCurrentConv((p) => ({ ...p, [mk]: convId }))
+      setActiveConvKey(convId)
+      // ★ 画布跟着模块走：只有声明了 autoOpenCanvas 的展示型模块，点进去才展开（见 lib/types.ts）。
+      //   对话型模块（费曼追问这类）点进去就是纯对话；想看画布再点顶栏的按钮。
+      //   ⚠️ 代价：没声明 autoOpenCanvas 的模块，作者看自己的 preview 要多点一下顶栏按钮 ——
+      //     这一点已写进 README 第一节 / 协作流程 六①。
+      setPanelOpen(Boolean(f?.autoOpenCanvas))
+      // ★ 只有**真的换了模块空间**才清画布，让新模块的对话自己产出。
+      //   以前这里是无条件 setArtifact(null)，于是重复点左栏里已经高亮的那一项
+      //   也会把刚产出的结果抹掉 —— 而费曼追问这类对话型模块 autoOpenCanvas 是 false、
+      //   画布本来就不展开，学生「点一下模块想看看结果」看到的是一片空白，像是坏了。
+      //   （其余行为刻意保持不变：比如展示型模块靠这一跳重新展开画布。）
+      if (mk !== activeModuleKey) setArtifact(null)
+    },
+    [activeModuleKey, metas, currentConv],
+  )
 
-    if (f) {
-      setActiveFeatureId(f.id)
-      setActiveConvKey(f.id)
-    } else {
-      setActiveFeatureId(null)
-      setActiveConvKey(GLOBAL_CONV)
-    }
-    // ★ 画布跟着模块走：只有声明了 autoOpenCanvas 的展示型模块，点进去才展开（见 lib/types.ts）。
-    //   对话型模块（费曼追问这类）点进去就是纯对话；想看画布再点顶栏的按钮。
-    //   ⚠️ 代价：没声明 autoOpenCanvas 的模块，作者看自己的 preview 要多点一下顶栏按钮 ——
-    //     这一点已写进 README 第一节 / 协作流程 六①。
+  /** 点某条历史对话：切到那条会话 */
+  const handlePickThread = useCallback(
+    (convId: string) => {
+      const mk = moduleKeyOf(convId)
+      setCurrentConv((p) => ({ ...p, [mk]: convId }))
+      setActiveConvKey(convId)
+      const f = mk === GLOBAL_CONV ? null : featureById(mk)
+      setPanelOpen(Boolean(f?.autoOpenCanvas))
+      if (mk !== activeModuleKey) setArtifact(null)
+    },
+    [activeModuleKey],
+  )
+
+  /** 「＋ 新对话」：切到该模块的空草稿；发出第一条消息时才会变成真实会话 */
+  const handleNewThread = useCallback((moduleKey: string) => {
+    const d = draftId(moduleKey)
+    setCurrentConv((p) => ({ ...p, [moduleKey]: d }))
+    setActiveConvKey(d)
+    setArtifact(null)
+    const f = moduleKey === GLOBAL_CONV ? null : featureById(moduleKey)
     setPanelOpen(Boolean(f?.autoOpenCanvas))
-    // ★ 只有**真的换了对话**才清画布，让新模块的对话自己产出。
-    //   以前这里是无条件 setArtifact(null)，于是重复点左栏里已经高亮的那一项
-    //   也会把刚产出的结果抹掉 —— 而费曼追问这类对话型模块 autoOpenCanvas 是 false、
-    //   画布本来就不展开，学生「点一下模块想看看结果」看到的是一片空白，像是坏了。
-    //   （其余行为刻意保持不变：比如展示型模块靠这一跳重新展开画布。）
-    if (nextKey !== activeConvKey) setArtifact(null)
-  }, [activeConvKey])
+  }, [])
+
+  /** 删除一条历史对话。删的是当前会话则退回该模块最新一条，没有就回空草稿 */
+  const handleDeleteThread = useCallback(
+    (convId: string) => {
+      const mk = moduleKeyOf(convId)
+      // 正在往这条会话里流：先停掉再删
+      if (streamConvKeyRef.current === convId) {
+        abortRef.current?.abort()
+        abortRef.current = null
+        setBusy(false)
+      }
+      setConversations((p) => {
+        const next = { ...p }
+        delete next[convId]
+        return next
+      })
+      setMetas((p) => p.filter((m) => m.id !== convId))
+      const fallback =
+        metas
+          .filter((m) => m.moduleKey === mk && m.id !== convId)
+          .sort((a, b) => b.updatedAt - a.updatedAt)[0]?.id ?? draftId(mk)
+      setCurrentConv((p) => (p[mk] === convId ? { ...p, [mk]: fallback } : p))
+      if (activeConvKey === convId) {
+        setActiveConvKey(fallback)
+        setArtifact(null)
+      }
+    },
+    [metas, activeConvKey],
+  )
+
+  /** 重命名一条历史对话（右击菜单 → 行内编辑） */
+  const handleRenameThread = useCallback((convId: string, title: string) => {
+    const t = title.trim().replace(/\s+/g, ' ').slice(0, 40) || '新对话'
+    setMetas((p) => p.map((m) => (m.id === convId ? { ...m, title: t } : m)))
+  }, [])
 
   /** 手动加载当前模块的样例数据（画布空态里的按钮） */
   const loadPreview = useCallback(() => {
@@ -489,8 +605,14 @@ export default function App() {
       <Sidebar
         collapsed={!sidebarOpen}
         features={features}
-        activeId={activeConvKey}
+        activeModuleKey={activeModuleKey}
+        activeConvId={activeConvKey}
+        threads={threads}
         onPick={handlePickFeature}
+        onPickThread={handlePickThread}
+        onNewThread={handleNewThread}
+        onDeleteThread={handleDeleteThread}
+        onRenameThread={handleRenameThread}
         connection={connection}
       />
 

@@ -200,12 +200,19 @@ export default function Component({ artifact, onSendMessage }: FeatureProps) {
             {rounds.map((round, index) => {
               const picked = selected?.round === index ? (round.annotated ?? [])[selected.seg] : undefined
               const pickedStyle = picked && isMark(picked.kind) ? MARK_STYLE[picked.kind] : null
+              // 学生直接以「我来讲讲…」开场时，第 1 轮记录的是他的开场自述而非对某个追问的回答
+              const isOpening = index === 0 && /开场|自述|初始讲解/.test(round.question)
               return (
                 <section className="box" key={`${index}-${round.question}`}>
-                  <div className="sub" style={{ marginBottom: 6 }}>第 {index + 1} 轮 · Agent 追问</div>
-                  <div style={{ lineHeight: 1.55 }}>{round.question}</div>
-
-                  <div style={{ marginTop: 12, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>你的回答</div>
+                  {isOpening ? (
+                    <div className="sub" style={{ marginBottom: 4 }}>第 1 轮 · 你的开场讲解</div>
+                  ) : (
+                    <>
+                      <div className="sub" style={{ marginBottom: 6 }}>第 {index + 1} 轮 · Agent 追问</div>
+                      <div style={{ lineHeight: 1.55 }}>{round.question}</div>
+                      <div style={{ marginTop: 12, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>你的回答</div>
+                    </>
+                  )}
                   <AnnotatedAnswer
                     round={round}
                     roundIndex={index}

@@ -274,6 +274,65 @@ textarea {
   background: var(--accent-soft);
   color: var(--accent);
 }
+/* 历史会话子条目：缩进一层挂在所属模块下 */
+.nav-sub {
+  padding-left: 24px;
+  font-size: var(--fs-sm);
+}
+.nav-sub .label {
+  font-weight: 400;
+}
+/* 历史条目内联重命名输入框 */
+.thread-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  outline: none;
+}
+/* 历史会话右击菜单 */
+.ctx-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 61;
+  min-width: 120px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow);
+}
+.ctx-item {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+  text-align: left;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.ctx-item:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.ctx-item.danger {
+  color: var(--err);
+}
+.ctx-item.danger:hover,
+.ctx-item.danger.confirm {
+  background: var(--err-soft);
+  color: var(--err);
+  font-weight: 600;
+}
 .sidebar-foot {
   border-top: 1px solid var(--border-soft);
   padding: 10px 12px;

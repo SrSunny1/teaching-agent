@@ -18,6 +18,19 @@ from . import config
 from .events import artifact, done, error, thinking, token, tool_call, tool_result
 from .tools import TOOLS, specs
 
+# ★ 复用 AsyncOpenAI 客户端（底层 httpx 连接池），避免每轮对话重新 TLS 握手。
+#   缓存 key 带上 AsyncOpenAI 类本身：test_smoke.py 会 monkeypatch `chat.AsyncOpenAI = _Client`，
+#   类对象一变就自动重建，不会把真实客户端漏进单测（反之亦然）。
+_client_cache: tuple[Any, str, str, Any] | None = None
+
+
+def _get_client() -> Any:
+    global _client_cache
+    key = (AsyncOpenAI, config.API_KEY, config.BASE_URL)
+    if _client_cache is None or _client_cache[:3] != key:
+        _client_cache = (*key, AsyncOpenAI(api_key=config.API_KEY, base_url=config.BASE_URL))
+    return _client_cache[3]
+
 
 def _system_prompt(feature: dict[str, Any] | None) -> str:
     """系统提示词 = 全局角色 + 「当前在哪个功能模块」。
@@ -123,7 +136,7 @@ async def run_chat(
         yield done()
         return
 
-    client = AsyncOpenAI(api_key=config.API_KEY, base_url=config.BASE_URL)
+    client = _get_client()
 
     # ★ 图片链路：前端把图片（data URL）挂在最后一条 user 消息的 image 上。
     #   聊天模型是**纯文本**的 —— 所以这里分两件事做：
