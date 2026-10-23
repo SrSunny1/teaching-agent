@@ -17,7 +17,7 @@ const NAILONG_STICKERS = [
   {
     img: '/nailong/wave.gif',
     label: '奶龙打招呼',
-    quote: '嗨～今天做金相、硬度还是热处理实验？点我随时开问！',
+    prompt: '你好呀！请介绍一下这门材料物理实验课包含哪些实验，以及你能怎么帮我学习？',
   },
   {
     img: '/nailong/peek.gif',
@@ -34,6 +34,13 @@ const NAILONG_STICKERS = [
     label: '考考我热处理',
     prompt: '来一道 45 钢淬火与回火的快问快答考考我',
   },
+]
+
+const HERO_QUOTES = [
+  '点下面任意一只奶龙，快速开启实验问答～',
+  '奶龙拍了拍圆肚皮：今天也要把实验原理搞得明明白白！',
+  '做金相抛光记得拿稳试样，小心飞出去变成暗器哦～',
+  '45 钢淬火完赶紧回火，马氏体太脆啦！',
 ]
 
 function Markdown({ children }: { children: string }) {
@@ -101,9 +108,7 @@ export default function ChatStream({ messages, onSend }: {
   const scrollRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
   const lastUserMessageRef = useRef<string | undefined>(undefined)
-  const [mascotQuote, setMascotQuote] = useState<string>(
-    '点下面任意一只奶龙，快速开启实验问答～',
-  )
+  const [quoteIdx, setQuoteIdx] = useState(0)
   const latestUserMessageId = [...messages].reverse().find((message) => message.role === 'user')?.id
 
   // 只在用户贴着底部时才自动滚动，避免打断向上翻阅
@@ -136,10 +141,8 @@ export default function ChatStream({ messages, onSend }: {
               className="nl-hero-avatar"
               src="/agent-logo.png"
               alt=""
-              onClick={() =>
-                setMascotQuote('奶龙拍了拍自己的圆肚皮：今天也要把实验原理搞得明明白白！')
-              }
-              title="点我一下试试"
+              onClick={() => setQuoteIdx((i) => i + 1)}
+              title="点我换一句实验悄悄话"
               style={{
                 display: 'block',
                 margin: '0 auto 14px',
@@ -165,13 +168,7 @@ export default function ChatStream({ messages, onSend }: {
                   type="button"
                   className="nl-sticker-btn"
                   style={{ animationDelay: `${idx * 65}ms` }}
-                  onClick={() => {
-                    if (s.prompt) {
-                      onSend(s.prompt)
-                    } else if (s.quote) {
-                      setMascotQuote(s.quote)
-                    }
-                  }}
+                  onClick={() => onSend(s.prompt)}
                 >
                   <img src={s.img} alt={s.label} />
                   <span>{s.label}</span>
@@ -179,18 +176,16 @@ export default function ChatStream({ messages, onSend }: {
               ))}
             </div>
 
-            {mascotQuote && (
-              <div>
-                <span className="nl-toast">
-                  <img
-                    src="/nailong/cute.png"
-                    alt=""
-                    style={{ width: 20, height: 20, objectFit: 'contain' }}
-                  />
-                  <span>{mascotQuote}</span>
-                </span>
-              </div>
-            )}
+            <div>
+              <span key={quoteIdx} className="nl-toast">
+                <img
+                  src="/nailong/cute.png"
+                  alt=""
+                  style={{ width: 20, height: 20, objectFit: 'contain' }}
+                />
+                <span>{HERO_QUOTES[quoteIdx % HERO_QUOTES.length]}</span>
+              </span>
+            </div>
           </div>
 
           <div
