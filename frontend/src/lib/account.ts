@@ -5,6 +5,7 @@ let revision = 0
 let queue: Promise<void> = Promise.resolve()
 let failure = ''
 let generation = 0
+const SESSION_KEY = 'mse-agent.session'
 
 export const authHeaders = (): Record<string, string> => token ? { Authorization: `Bearer ${token}` } : {}
 export async function accountRequest(path: string, body?: unknown, method = 'POST') {
@@ -20,10 +21,28 @@ export async function signIn(id: string, password: string) {
   try {
     const record = await accountRequest('records', undefined, 'GET')
     studentId = result.studentId; data = record.data; revision = record.revision; failure = ''; generation++
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify({ token, studentId })) } catch { /* ignore */ }
   } catch (err) { token = ''; throw err }
+}
+export async function restoreSession(): Promise<string> {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return ''
+    const saved = JSON.parse(raw) as { token?: string; studentId?: string }
+    if (!saved?.token || !saved?.studentId) return ''
+    token = saved.token
+    const record = await accountRequest('records', undefined, 'GET')
+    studentId = saved.studentId; data = record.data; revision = record.revision; failure = ''; generation++
+    return studentId
+  } catch {
+    token = ''
+    try { localStorage.removeItem(SESSION_KEY) } catch { /* ignore */ }
+    return ''
+  }
 }
 export function resetAccount() {
   generation++; token = ''; studentId = ''; data = {}; revision = 0; failure = ''; queue = Promise.resolve()
+  try { localStorage.removeItem(SESSION_KEY) } catch { /* ignore */ }
   delete (window as unknown as Record<string, unknown>).__mistakeBookDebug
 }
 export async function flushAccount() { await queue; if (failure) throw new Error(failure) }

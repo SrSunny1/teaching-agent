@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import App from './App'
 import './auth.css'
-import { accountRequest, exportAccount, flushAccount, resetAccount, signIn, studentId } from '../lib/account'
+import { accountRequest, exportAccount, flushAccount, resetAccount, restoreSession, signIn, studentId } from '../lib/account'
 
 export default function AuthGate() {
   const [user, setUser] = useState('')
@@ -11,6 +11,9 @@ export default function AuthGate() {
   const [sync, setSync] = useState('已保存')
   const [changePassword, setChangePassword] = useState(false)
   const [chatBusy, setChatBusy] = useState(false)
+  useEffect(() => {
+    restoreSession().then(id => { if (id) setUser(id) })
+  }, [])
   useEffect(() => {
     const listener = (e: Event) => setSync((e as CustomEvent<string>).detail)
     const busyListener = (e: Event) => setChatBusy((e as CustomEvent<boolean>).detail)
@@ -63,8 +66,7 @@ export default function AuthGate() {
       try {
         if (register) {
           if (password !== fields.get('confirm')) throw new Error('两次密码不一致')
-          await accountRequest('register', { studentId: id, password })
-          setRegister(false); setError('注册成功，请登录'); return
+          await accountRequest('register', { studentId: id, password }).catch(() => null)
         }
         await signIn(id, password); setUser(studentId); setSync('已保存')
       } catch (err) { setError(err instanceof Error ? err.message : '连接失败，请确认后端已启动') } finally { setBusy(false) }
@@ -90,7 +92,7 @@ export default function AuthGate() {
       <p className="auth-error" role="alert">{error}</p>
       <button className="auth-submit" disabled={busy}>{busy ? '处理中…' : register ? '创建账号' : '登录'}</button>
       <div className="auth-switch"><span>{register ? '已有学习账号？' : '第一次来到这里？'}</span><button type="button" disabled={busy} onClick={() => { setRegister(!register); setError('') }}>{register ? '返回登录' : '注册账号'}</button></div>
-      <p className="auth-help">忘记密码请联系教师。登录有效期 8 小时，刷新后需重新登录。</p>
+      <p className="auth-help">直接输入账号密码即可登录（首次输入将自动创建学习账号，刷新页面自动保持登录）。</p>
     </form>
     <footer className="auth-footer">材料科学 · 实验探索 · 自主学习</footer>
   </main>

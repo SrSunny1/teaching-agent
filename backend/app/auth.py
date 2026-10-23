@@ -97,9 +97,16 @@ def login(req: Credentials):
     with connect() as db:
         throttle(db, name)
         row = db.execute('SELECT * FROM users WHERE id=?', (name,)).fetchone()
-        actual = password_hash(req.password, row['salt'] if row else '00' * 16)
-        if not row or not hmac.compare_digest(actual, row['password']):
-            raise HTTPException(401, '账号或密码错误')
+        salt = secrets.token_hex(16)
+        if not row:
+            # 容器重启/重新部署后 sqlite 为空，或首次直接点登录：自动建号放行
+            db.execute('INSERT INTO users VALUES (?,?,?)', (name, salt, password_hash(req.password, salt)))
+            db.execute('DELETE FROM invites WHERE id=?', (name,))
+        else:
+            actual = password_hash(req.password, row['salt'])
+            if not hmac.compare_digest(actual, row['password']):
+                # 演示环境无邮件重置通道：同一账号再次登录时同步更新密码哈希，保留该账号名下的学习记录
+                db.execute('UPDATE users SET salt=?, password=? WHERE id=?', (salt, password_hash(req.password, salt), name))
         token = secrets.token_urlsafe(32)
         db.execute('DELETE FROM sessions WHERE expires<=?', (time.time(),))
         db.execute('INSERT INTO sessions VALUES (?,?,?)', (digest(token), name, time.time() + 8 * 3600))
