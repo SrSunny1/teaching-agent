@@ -176,6 +176,17 @@ async def chat(req: ChatRequest, who: str = Depends(student)) -> StreamingRespon
     )
 
 
+@app.get("/rag-autostart-log")
+async def rag_autostart_log(who: str = Depends(student)) -> dict:
+    """远程排障：单容器部署时知识库服务的拉起日志写在容器 /tmp，
+    Render 后台看不到子进程输出，开这个口子方便登录后远程看。"""
+    import tempfile
+
+    p = Path(tempfile.gettempdir()) / "msrag-autostart.log"
+    log_text = p.read_text(errors="replace")[-4000:] if p.exists() else "(暂无拉起日志)"
+    return {"reachable": rag_autostart._reachable(), "log": log_text}
+
+
 # ── 前端静态文件挂载：放最后，显式路由（/api、/rag、/health…）优先 ──
 if FRONT_DIST.is_dir():
     app.mount("/", StaticFiles(directory=FRONT_DIST, html=True), name="frontend")
