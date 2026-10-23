@@ -184,7 +184,17 @@ async def rag_autostart_log(who: str = Depends(student)) -> dict:
 
     p = Path(tempfile.gettempdir()) / "msrag-autostart.log"
     log_text = p.read_text(errors="replace")[-4000:] if p.exists() else "(暂无拉起日志)"
-    return {"reachable": rag_autostart._reachable(), "log": log_text}
+    return {
+        "reachable": rag_autostart._reachable(),
+        "key_info": {
+            "has_key": config.has_api_key(),
+            "len": len(config.API_KEY),
+            "prefix": config.API_KEY[:3] if config.API_KEY else "",
+            "model": config.MODEL,
+            "base_url": config.BASE_URL,
+        },
+        "log": log_text,
+    }
 
 
 # ── 前端静态文件挂载：放最后，显式路由（/api、/rag、/health…）优先 ──

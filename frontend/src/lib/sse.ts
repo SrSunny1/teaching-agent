@@ -110,7 +110,7 @@ export interface ProbeResult {
  * ★ 后端在跑但**没配 API Key** 时也算不可用 —— 否则前端会走真实流、然后每条消息都报错，
  *   队友 clone 下来忘了填 .env 就会以为项目坏了。这种情况自动退回 mock。
  */
-export async function probeBackend(timeoutMs = 1500): Promise<ProbeResult> {
+export async function probeBackend(timeoutMs = 10000): Promise<ProbeResult> {
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), timeoutMs)

@@ -300,6 +300,10 @@ async def run_chat(
             yield error(f"已达到最大工具调用轮数（{config.MAX_TURNS}），中止本轮。")
 
     except Exception as exc:
-        yield error(f"{type(exc).__name__}: {exc}")
+        cause = f" ({type(exc.__cause__).__name__}: {exc.__cause__})" if exc.__cause__ else ""
+        msg = f"{type(exc).__name__}: {exc}{cause}"
+        if config.API_KEY:
+            msg = msg.replace(config.API_KEY, "***")
+        yield error(msg)
     finally:
         yield done()

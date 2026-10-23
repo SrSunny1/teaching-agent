@@ -22,13 +22,41 @@ def _load_env() -> None:
 
 _load_env()
 
-API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-BASE_URL = os.environ.get("BASE_URL", "https://api.deepseek.com/v1")
+
+def _clean_api_key(raw: str) -> str:
+    """清洗环境变量或 .env 里的 API Key。
+
+    云平台（Render 等）网页端粘贴环境变量时，极易带入首尾空格、换行、引号，
+    甚至整行 `DEEPSEEK_API_KEY=sk-...`。一旦含空白或换行，httpx 构造
+    Authorization 请求头会直接抛 LocalProtocolError，被 OpenAI 包装成
+    APIConnectionError: Connection error.
+    """
+    for line in (raw or "").splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if "=" in s:
+            k, _, v = s.partition("=")
+            if "KEY" in k.upper():
+                s = v.strip()
+            else:
+                continue
+        s = s.strip('"').strip("'").strip()
+        if s.lower().startswith("bearer "):
+            s = s[7:].strip()
+        cleaned = "".join(ch for ch in s if ch.isascii() and not ch.isspace())
+        if cleaned:
+            return cleaned
+    return ""
+
+
+API_KEY = _clean_api_key(os.environ.get("DEEPSEEK_API_KEY", ""))
+BASE_URL = os.environ.get("BASE_URL", "https://api.deepseek.com/v1").strip().strip('"').strip("'")
 # ★ 兜底默认值必须跟 .env.example 一致。DeepSeek 现在只提供
 #   deepseek-flash（支持图片）和 deepseek-v4-pro（纯文本），deepseek-chat 已经下线。
 #   不改这里的话，队友跑 setup.sh（它会把 .env.example 复制成 .env）拿到旧名字就会 400。
-MODEL = os.environ.get("MODEL", "deepseek-flash")
-VISION_MODEL = os.environ.get("VISION_MODEL", MODEL)
+MODEL = os.environ.get("MODEL", "deepseek-flash").strip().strip('"').strip("'")
+VISION_MODEL = os.environ.get("VISION_MODEL", MODEL).strip().strip('"').strip("'")
 
 
 def looks_like_placeholder(key: str) -> bool:

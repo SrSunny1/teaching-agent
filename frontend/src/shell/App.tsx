@@ -132,11 +132,14 @@ function mergeEvent(m: Message, e: SSEEvent): Message {
           t.id === e.id ? { ...t, status: 'ok' as const, summary: e.summary, detail: e.detail } : t,
         ),
       }
-    case 'error':
+    case 'error': {
+      const errNote = `**请求异常**：${e.message}`
       return {
         ...m,
+        content: m.content ? `${m.content}\n\n${errNote}` : errNote,
         tools: (m.tools ?? []).map((t) => (t.status === 'running' ? { ...t, status: 'error' as const } : t)),
       }
+    }
     default:
       return m
   }

@@ -61,7 +61,8 @@ def _spawn(rag_dir: Path) -> None:
         cmd += ["--host", bind]
     # 输出写临时文件，不占终端、也不污染原系统目录
     out = open(Path(tempfile.gettempdir()) / "msrag-autostart.log", "ab")
-    kwargs: dict = {"cwd": str(rag_dir), "stdout": out, "stderr": out, "stdin": subprocess.DEVNULL}
+    env = {**os.environ, "MSRAG_AUTO_SEED": "0"}
+    kwargs: dict = {"cwd": str(rag_dir), "env": env, "stdout": out, "stderr": out, "stdin": subprocess.DEVNULL}
     if os.name == "nt":
         # 脱离本进程：后端重启/退出不带走知识库服务
         kwargs["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
