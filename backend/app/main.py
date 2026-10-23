@@ -1,7 +1,8 @@
-"""FastAPI 入口。只有两个端点，契约见 README.md 的「三、契约」。"""
+"""FastAPI entry point, including authenticated student records and chat."""
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from .auth import router as auth_router, student
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -12,6 +13,7 @@ from .events import encode
 from .tools import TOOLS
 
 app = FastAPI(title="材料物理实验教学 Agent", version="0.1.0")
+app.include_router(auth_router)
 
 # 竞赛演示用，放开 CORS。生产环境应收紧。
 app.add_middleware(
@@ -85,7 +87,7 @@ async def health() -> dict:
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest) -> StreamingResponse:
+async def chat(req: ChatRequest, who: str = Depends(student)) -> StreamingResponse:
     history = [m.model_dump() for m in req.messages]
     feature = req.feature.model_dump() if req.feature else None
 

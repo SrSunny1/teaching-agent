@@ -176,6 +176,7 @@ export default function App() {
   /** 后端实际在用的模型名，给顶栏展示。空字符串 = 还没探测到 */
   const [modelName, setModelName] = useState('')
   const [stats, setStats] = useState<SessionStats>({})
+  useEffect(() => { window.dispatchEvent(new CustomEvent('account:busy', { detail: busy })) }, [busy])
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   const messages = conversations[activeConvKey] ?? []
@@ -603,7 +604,7 @@ export default function App() {
         ]
         .filter(Boolean)
         .join(' ')}
-      style={{ '--artifact-w': `${panelWidth}px`, position: 'relative' } as CSSProperties}
+      style={{ '--artifact-w': `${panelWidth}px`, position: 'relative', height: '100%' } as CSSProperties}
     >
       <Sidebar
         onOpenReport={() => setReportOpen(true)}

@@ -7,12 +7,13 @@ import type { MistakeEntry } from './types'
  * 关掉画布再打开不丢。后端题库数据不在这里 —— 题库的唯一真相源是
  * backend/app/tools/mistake_book/bank.py。
  */
+import { accountStorage } from '../../lib/account'
 const KEY = 'plugin.mistakeBook.records'
 const MAX = 100
 
 export function loadRecords(): MistakeEntry[] {
   try {
-    const raw = window.localStorage.getItem(KEY)
+    const raw = accountStorage.getItem(KEY)
     if (!raw) return []
     const arr = JSON.parse(raw)
     return Array.isArray(arr) ? arr : []
@@ -25,7 +26,7 @@ export function saveRecord(entry: MistakeEntry): void {
   try {
     const list = loadRecords().filter((e) => e.id !== entry.id)
     list.unshift(entry)
-    window.localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)))
+    accountStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)))
   } catch {
     /* 存不下就存不下吧，画布当次会话仍然可见 */
   }
@@ -33,7 +34,7 @@ export function saveRecord(entry: MistakeEntry): void {
 
 export function deleteRecord(id: string): void {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(loadRecords().filter((e) => e.id !== id)))
+    accountStorage.setItem(KEY, JSON.stringify(loadRecords().filter((e) => e.id !== id)))
   } catch {
     /* 忽略 */
   }
@@ -41,7 +42,7 @@ export function deleteRecord(id: string): void {
 
 export function clearRecords(): void {
   try {
-    window.localStorage.removeItem(KEY)
+    accountStorage.removeItem(KEY)
   } catch {
     /* 忽略 */
   }

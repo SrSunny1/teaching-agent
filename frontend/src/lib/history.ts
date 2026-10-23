@@ -8,6 +8,7 @@
  *     点「新对话」只切到一个空草稿，发出第一条消息时才 materialize 成 conv id。
  */
 import type { Message } from './types'
+import { accountStorage as localStorage } from './account'
 
 /** 全局对话空间的 moduleKey（不占任何模块） */
 export const GLOBAL_CONV = '__global__'

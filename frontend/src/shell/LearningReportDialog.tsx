@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReportConversation, LearningReport } from '../lib/learningReport'
 import { buildLearningReport, reportText } from '../lib/learningReport'
+import { studentId } from '../lib/account'
 
 export default function LearningReportDialog({ conversations, currentId, onClose }: {
   conversations: ReportConversation[]; currentId: string; onClose: () => void
@@ -14,7 +15,7 @@ export default function LearningReportDialog({ conversations, currentId, onClose
   const change = (ids: string[]) => { setSelected(ids); setReport(null); setConfirmed(false) }
   function download() {
     if (!report) return
-    const url = URL.createObjectURL(new Blob([reportText(report)], { type: 'text/markdown;charset=utf-8' }))
+    const url = URL.createObjectURL(new Blob([`学号：${studentId}\n\n${reportText(report)}`], { type: 'text/markdown;charset=utf-8' }))
     const link = document.createElement('a'); link.href = url; link.download = '学习评价报告.md'; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
@@ -24,7 +25,7 @@ export default function LearningReportDialog({ conversations, currentId, onClose
       <h2 id="learning-report-title" style={{ fontSize: 20, margin: 0 }}>个人学习评价报告</h2>
       <button className="chip" onClick={onClose}>关闭</button>
     </header>
-    <p className="sub">评价范围：所选会话中的作答与费曼点评。仅在本机整理，不上传记录。</p>
+    <p className="sub">学号：{studentId}。评价范围：当前账号所选会话中的作答与费曼点评。学习记录按账号保存在服务器，报告在本机生成。</p>
     <fieldset style={{ border: '1px solid var(--border-soft)', margin: '16px 0', maxHeight: 190, overflowY: 'auto' }}>
       <legend>选择本次学习记录</legend>
       {!conversations.length && <p>暂无会话记录，请先完成学习与作答。</p>}

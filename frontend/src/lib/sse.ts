@@ -7,6 +7,7 @@
  * 契约见 README.md 的「三、契约」
  */
 import type { Message, SSEEvent } from './types'
+import { authHeaders } from './account'
 
 const ENDPOINT = '/api/chat'
 
@@ -49,7 +50,7 @@ function parseLine(line: string): SSEEvent | null {
 export async function streamChat(opts: StreamOptions): Promise<void> {
   const res = await fetch(ENDPOINT, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({
       session_id: opts.sessionId,
       // ★ 只带 role/content/image —— 本地消息里的 thinking、tools 等是给人看的，
