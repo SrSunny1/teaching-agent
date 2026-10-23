@@ -52,9 +52,10 @@ def _reachable(timeout: float = 1.5) -> bool:
 
 def _spawn(rag_dir: Path) -> None:
     cmd = [sys.executable, str(rag_dir / "start.py"), "--no-browser", "--no-smoke"]
-    port = os.environ.get("MSRAG_PORT", "").strip()
-    if port:
-        cmd += ["--port", port]
+    # 必须显式传端口：Render 会注入 PORT=10000 给主进程，原 RAG 系统的
+    # get_settings() 兜底读 PORT，不传参就会被带偏去抢主服务的端口。
+    port = os.environ.get("MSRAG_PORT", "").strip() or "8765"
+    cmd += ["--port", port]
     bind = os.environ.get("MSRAG_BIND", "").strip()
     if bind:
         cmd += ["--host", bind]
