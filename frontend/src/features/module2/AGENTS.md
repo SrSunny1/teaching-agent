@@ -7,91 +7,74 @@
 | 项 | 值 |
 |---|---|
 | 模块名 | **知识库RAG** |
-| artifactType | `module2`（仅画布预览用元信息） |
-| 前端 | `frontend/src/features/module2/`（**整页模式**：iframe 内嵌原系统） |
-| 后端工具 | **`backend/app/tools/materials_rag/`**（包装原系统 HTTP API） |
-| 接入对象 | **仓库内置的「材料科学RAG系统」**（`../../../../材料科学RAG系统/`，默认 `http://127.0.0.1:8765`） |
-| 左栏顺序 | 20 |
+| artifactType | `module2` |
+| 前端 | `frontend/src/features/module2/`（**三栏画布模式**，`autoOpenCanvas: true`，与错题集、费曼追问同位阶） |
+| 后端工具 | **`backend/app/tools/materials_rag/`**（包装原系统 HTTP API，并产出 `module2` 画布证据产物） |
+| 接入对象 | **仓库内置的「材料科学RAG系统」**（`rag-system/`，默认 `http://127.0.0.1:8765`） |
+| 左栏顺序 | 20（第二模块，位于「全局对话」与「课程图谱」之后） |
 | 模块身份 `persona` | **已填**（见 `index.ts`） |
-| 主题 | **不自建界面** —— 原系统的黄米色界面 1:1 呈现，主题归原系统管 |
+| 主题 | 主智能体 `tokens.css` 统一设计语言 + 模块内部可配置主题色 `--kb-accent`（默认靛青） |
 
 ---
 
 ## 一、这个模块要做什么
 
-左栏的可点击块「知识库RAG」→ 整页**直接内嵌用户已有的「材料科学RAG系统」Web 界面**
-（总览 / 文献库 / 智能问答 / 设置，含其暗色切换），**不自建任何页面、不改原系统一行代码**。
+**本模块为【课程文献与证据溯源画布】，与错题集、费曼追问、3D 可视化采用完全一致的三栏工作台形态：**
 
-原系统自带完整能力：PDF/Markdown 入库、混合检索（语义向量 + BM25）、带证据引用的
-生成式回答与段落级溯源。接口契约见其 `sdk/agent_tools.json` 与 `sdk/plugin.yaml`。
+- **左栏**：壳的统一导航（保留「全局对话」在第一位，「知识库RAG」作为第二模块）
+- **中栏**：壳的标准对话流与输入框（天然支持 📎 上传/粘贴金相图片、工具调用卡片与流式回答）
+- **右栏画布（`autoOpenCanvas: true`）**：提供全局对话没有的三项 RAG 专属能力：
+  1. **Tab 1 · 证据溯源**：中栏每次触发 `materials_rag`（`search`/`ask`/`get`），后端自动将命中的原文段落、所属讲义、章节、匹配度得分与 `chunkId` 组装为 `module2` 产物推上画布；支持本地展开完整段落、「调阅解读」与「围绕此段追问」。
+  2. **Tab 2 · 课程资料库（15 份封闭语料精读与定向提问）**：按 **教材（1）/ 课程讲义（6）/ 教学大纲（2）/ 劳动教育（6）** 四类分组浏览；支持**勾选 1~3 份讲义「🎯 锁定范围定向提问」**（将 `documentIds` 传给 `materials_rag`）或多篇对比。
+  3. **Tab 3 · 补充资料与后台**：提供课堂笔记文本入库表单（调 `add_text`）、主题色切换，以及「新窗口打开 RAG 后台（完整版）」按钮（跳往 `:8765` 查看底层向量与 BM25 配置）。
 
-**连接判定**：iframe `onLoad` → 已连接；6 秒未触发 → 显示「启动中」卡片并**自动轮询重连**
-（每 2 秒探测 `/api/meta`，就绪后自动刷新 iframe，评委无需任何操作）。
-服务地址可在顶栏地址框改（存 localStorage 键 `plugin.knowledgeBase.baseUrl`，默认 `http://127.0.0.1:8765`）。
+## 二、数据形状（`KbArtifact`，camelCase）
 
-**自动启动**：教学 Agent 后端启动时由 `backend/app/rag_autostart.py` 探测并拉起
-**项目内置的 `rag-system/`**（`start.py --no-browser --no-smoke`，**已在运行则跳过**；
-外置原系统目录仅作兜底，`MSRAG_AUTOSTART=0` 可关闭，`MSRAG_DIR` 可指定目录）。
-内置副本带一份预置知识库快照（`data/msrag.db` + `vectors.json` + `uploads/`），
-别人拿到项目无需手动启动、无需重新灌库。原系统代码一行不改。
+`backend/app/tools/materials_rag/__init__.py` 在 `status` / `search` / `ask` / `list` / `get` / `add_text` 六个动作下返回 `ToolResult(..., artifact_type="module2", artifact={...})`：
 
-## 二、后端工具 materials_rag（与原系统共用同一套 API）
+```json
+{
+  "mode": "search",
+  "query": "金相试样制备的完整流程",
+  "answer": "",
+  "focusedDocIds": ["doc_a163fb0e84f8ef3669"],
+  "evidences": [
+    {
+      "chunkId": "chk_doc_a163fb0e84f8ef3669_0001_0000",
+      "documentId": "doc_a163fb0e84f8ef3669",
+      "documentTitle": "课程讲义·金相试样制备",
+      "category": "课程讲义",
+      "section": "一、实验目的与制备五步流程",
+      "score": 0.912,
+      "snippet": "金相试样制备是材料显微组织分析的基础环节……",
+      "content": "完整原文段落……"
+    }
+  ],
+  "documents": [
+    {
+      "id": "doc_a163fb0e84f8ef3669",
+      "title": "课程讲义·金相试样制备",
+      "category": "课程讲义",
+      "source": "实验三讲义 · 取样镶嵌磨光抛光浸蚀",
+      "status": "ready"
+    }
+  ],
+  "totalDocs": 15,
+  "baseUrl": "http://127.0.0.1:8765",
+  "note": "检索「金相试样制备」命中 3 段课程原文证据"
+}
+```
 
-`backend/app/tools/materials_rag/__init__.py` 用标准库 urllib 包装原系统 HTTP API
-（信封 `{"success": true, "data": ...}`），动作与 `sdk/agent_tools.json` 一一对应：
+## 三、验收标准
 
-| action | 原系统接口 | 用途 |
-|---|---|---|
-| `status` | GET /api/meta | 服务能力与知识库规模 |
-| `search` | POST /api/search | 检索原文段落（只检索不生成），引用标 chunk_id |
-| `ask` | POST /api/ask | 带证据引用的生成式回答 |
-| `list` | GET /api/documents | 文献列表（q / docStatus / limit 过滤） |
-| `get` | GET /api/chunks/{id} | 按 chunk_id 取证据原文 |
-| `add_text` | POST /api/documents/text | 文本入库（title + content 必填） |
+- 左栏点「知识库RAG」→ 进入三栏工作台，中栏为标准对话流（可上传/粘贴图片），右栏自动展开「课程文献与证据溯源画布」并渲染 `preview.ts` 的 3 条真实证据卡与 15 份课程资料
+- 点击画布快捷检索 chip 或在中栏提问 → Agent 调用 `materials_rag` → 右栏画布实时更新命中证据卡（右上角「预览数据」标签消失）
+- 在「课程资料库」勾选 1~2 份讲义并定向提问 → Agent 以 `documentIds` 精确检索所选讲义
+- 「补充资料与后台」tab 中点「新窗口打开 RAG 后台（完整版）」可打开 `:8765` 原系统页面；关掉插件开关显示「插件已禁用」卡片且左栏入口保留
+- `python scripts/check-boundaries.py` 与 `cd frontend && npx tsc -b` 全绿
 
-- 服务地址读环境变量 `MSRAG_BASE_URL`（或 `MSRAG_HOST` / `MSRAG_PORT`），默认 8765；
-- 服务未启动时**如实**返回启动指引，不臆造数据；
-- HTTP 调用走 `asyncio.to_thread`，不阻塞事件循环；
-- **不新增鉴权、不改原系统代码**；检索不到就明确告知模型"如实说明，不要臆造"。
-
-## 三、当前状态
-
-- ✅ 整页 iframe 内嵌（顶栏：状态点 / 地址框 / 连接 / 刷新 / 新窗口打开 / 插件开关）
-- ✅ 未启动引导卡片（启动方法 + 重试 + 新窗口打开）
-- ✅ 后端 `materials_rag` 六动作工具（含超时与连接失败兜底）
-- ✅ 画布版 `Component.tsx`：说明 + 快捷入口（新窗口打开 / 让 Agent 查文献 / 查状态）
-- ★ 历史版本说明：本模块曾自建黄米色自检页与 `rag_selfcheck` 工具（检查 teaching-agent
-  自带 chunks.jsonl 语料），按用户要求已整体移除 —— 知识库全部模式以用户原系统为准。
-  教学智能体 `data/chunks.jsonl` 那套语料仍在，仅不再由本模块管理。
-
-## 四、验收标准
-
-**通用三条：** 左栏点进来画布正常渲染；对话触发 `materials_rag` 后能拿到真实结果；
-`python scripts/check-boundaries.py` 全绿。
-
-**本模块特有：**
-
-- 左栏白色风格可点击块「知识库RAG」→ 点击整页出现**原系统界面**（样式与原系统启动后一模一样）
-- 原系统未启动时：显示启动指引卡片（不白屏）；启动后点「重试」→ 界面出现，状态点变绿
-- 顶栏「新窗口打开」能新开原系统页面；地址框改端口后能连上
-- 对话里问「知识库里有哪些文献」→ Agent 调 `materials_rag list` → 返回真实文献列表
-- 问课程知识 → Agent 调 `search` / `ask` → 回答带 chunk_id 引用；知识库没有的内容，Agent 明确说明
-- 顶栏「插件」开关关闭 → 本页立即显示「插件已禁用」卡片，**左栏入口保留**，点「启用」即刻恢复
-  （不允许出现"禁用后入口消失找不回来"的死路）
-
-## 五、怎么写（四条约定）
-
-1. iframe 是唯一的内容载体，**不要在 iframe 外再包自定义业务界面**；
-   ⚠️ `.kb-pos` 必须保持 flex 容器 —— iframe 没有固定高度，父容器不是 flex 时会回落到浏览器默认 150px，看起来就像"下半屏白屏"；
-2. 连接状态判定只用 iframe 生命周期（onLoad / 超时），组件不发数据请求；
-3. 需要 Agent 干活时调 `props.onSendMessage('...')`；
-4. 顶栏样式用 tokens.css 令牌，**不改 tokens.css、不改原系统 web/ 目录**。
-
-## 六、只改这些
+## 四、只改这些
 
 - `frontend/src/features/module2/`
 - `backend/app/tools/materials_rag/`
-- `backend/app/rag_autostart.py`（自动拉起逻辑）
-
-**内置的 `rag-system/` 原系统代码一律不碰**（它是随仓库分发的原样副本，改需求请回原项目改完再同步）。
-提交前跑 `python scripts/check-boundaries.py` 与 `cd frontend && npx tsc -b`。
+- `backend/app/rag_autostart.py`

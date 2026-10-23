@@ -54,8 +54,9 @@ export const moduleKeyOf = (key: string) => key.split(':')[1] || GLOBAL_CONV
 
 /** 会话标题：第一条用户消息，截断到 24 字 */
 export const convTitle = (text: string) => {
-  const t = text.trim().replace(/\s+/g, ' ').slice(0, 24)
-  return t || '新对话'
+  const t = text.trim().replace(/\s+/g, ' ')
+  if (!t) return '新对话'
+  return t.length > 24 ? `${t.slice(0, 24)}…` : t
 }
 
 /** 打开某模块时进哪条对话：上次打开的 → 最新一条历史 → 空草稿 */

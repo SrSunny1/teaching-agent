@@ -15,7 +15,7 @@ export default function LearningReportDialog({ conversations, currentId, onClose
   const change = (ids: string[]) => { setSelected(ids); setReport(null); setConfirmed(false) }
   function download() {
     if (!report) return
-    const url = URL.createObjectURL(new Blob([`学号：${studentId}\n\n${reportText(report)}`], { type: 'text/markdown;charset=utf-8' }))
+    const url = URL.createObjectURL(new Blob([`账号：${studentId}\n\n${reportText(report)}`], { type: 'text/markdown;charset=utf-8' }))
     const link = document.createElement('a'); link.href = url; link.download = '学习评价报告.md'; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
@@ -25,13 +25,16 @@ export default function LearningReportDialog({ conversations, currentId, onClose
       <h2 id="learning-report-title" style={{ fontSize: 20, margin: 0 }}>个人学习评价报告</h2>
       <button className="chip" onClick={onClose}>关闭</button>
     </header>
-    <p className="sub">学号：{studentId}。评价范围：当前账号所选会话中的作答与费曼点评。学习记录按账号保存在服务器，报告在本机生成。</p>
+    <p className="sub">账号：{studentId}。评价范围：当前账号所选会话中的作答与费曼点评。学习记录按账号保存在服务器，报告在本机生成。</p>
     <fieldset style={{ border: '1px solid var(--border-soft)', margin: '16px 0', maxHeight: 190, overflowY: 'auto' }}>
       <legend>选择本次学习记录</legend>
       {!conversations.length && <p>暂无会话记录，请先完成学习与作答。</p>}
-      {conversations.map(c => <label key={c.id} style={{ display: 'flex', alignItems: 'start', gap: 8, padding: '5px 0' }}>
-        <input type="checkbox" checked={selected.includes(c.id)} onChange={e => change(e.target.checked ? [...selected, c.id] : selected.filter(id => id !== c.id))} />{c.title}
-      </label>)}
+      {conversations.map(c => {
+        const first = c.messages.find(m => m.role === 'user')?.content.trim().replace(/\s+/g, ' ')
+        return <label key={c.id} title={first && first !== c.title ? first : undefined} style={{ display: 'flex', alignItems: 'start', gap: 8, padding: '5px 0' }}>
+          <input type="checkbox" checked={selected.includes(c.id)} onChange={e => change(e.target.checked ? [...selected, c.id] : selected.filter(id => id !== c.id))} />{c.title}
+        </label>
+      })}
     </fieldset>
     <label style={{ display: 'flex', gap: 8 }}><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />我确认选中的记录属于本次被评价的学生</label>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '16px 0' }}>

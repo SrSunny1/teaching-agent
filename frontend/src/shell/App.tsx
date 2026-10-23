@@ -30,6 +30,7 @@ import Composer from './Composer'
 import ArtifactPanel from './ArtifactPanel'
 import StatusBar from './StatusBar'
 import LearningReportDialog from './LearningReportDialog'
+import FeedbackDialog from './FeedbackDialog'
 
 const uid = () => `m_${crypto.randomUUID()}`
 
@@ -150,6 +151,7 @@ export default function App() {
    */
   const [initial] = useState(loadStore)
   const [reportOpen, setReportOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [conversations, setConversations] = useState<Record<string, Message[]>>(initial.conversations)
   const [metas, setMetas] = useState<ConvMeta[]>(initial.metas)
   const [currentConv, setCurrentConv] = useState<Record<string, string>>(initial.currentConv)
@@ -623,6 +625,7 @@ export default function App() {
     >
       <Sidebar
         onOpenReport={() => setReportOpen(true)}
+        onOpenFeedback={() => setFeedbackOpen(true)}
         reportBusy={busy}
         collapsed={!sidebarOpen}
         features={features}
@@ -639,9 +642,10 @@ export default function App() {
 
       {reportOpen && <LearningReportDialog currentId={activeConvKey} onClose={() => setReportOpen(false)}
         conversations={metas.map(m => ({ id: m.id, title: m.title, messages: conversations[m.id] ?? [] }))} />}
+      {feedbackOpen && <FeedbackDialog context={activeFeature ? activeFeature.title : '全局对话'} onClose={() => setFeedbackOpen(false)} />}
       <div className="main">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 16px', borderBottom: '1px solid var(--border-soft)' }}>
-          <button className="chip" disabled={busy} onClick={() => setReportOpen(true)}>学习评价报告</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '6px 16px', borderBottom: '1px solid var(--border-soft)' }}>
+          <button className="chip" onClick={() => setFeedbackOpen(true)}>意见反馈</button>
         </div>
         {PageComp ? (
           /* ★ 整页模式：模块接管主区。它拿得到 artifact / onSendMessage / onEmitArtifact，

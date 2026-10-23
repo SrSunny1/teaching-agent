@@ -570,19 +570,9 @@
   }
 
   function renderLlmChip() {
+    // 教学 Agent 演示版：页头不显示 LLM 接入徽标
     var chip = $('#llmChip');
-    if (!chip) return;
-    if (!state.meta) { chip.hidden = true; return; }
-    var cap = (state.meta.capabilities || {});
-    var llm = cap.llm || {};
-    chip.hidden = false;
-    if (llm.enabled) {
-      chip.className = 'llm-chip badge ok';
-      chip.innerHTML = '<span class="cap-dot ok" style="margin-top:0"></span>LLM 已接入 · ' + esc(llm.model || '默认模型');
-    } else {
-      chip.className = 'llm-chip badge warn';
-      chip.innerHTML = '<span class="cap-dot warn" style="margin-top:0"></span>LLM 未接入 · 抽取式作答';
-    }
+    if (chip) chip.hidden = true;
   }
 
   /* ------------------------------------------------------------------ */
@@ -1847,13 +1837,9 @@
   }
 
   function renderSettingsChip() {
+    // 教学 Agent 演示版：设置页不显示模型接入徽标
     var chip = $('#settingsChip');
-    if (!chip) return;
-    var eff = settingsState.effective || {};
-    chip.textContent = eff.llm_enabled
-      ? '大模型已接入 · ' + (eff.llm_model || '')
-      : '未配置 Key · 抽取式作答';
-    chip.hidden = false;
+    if (chip) chip.hidden = true;
   }
 
   function renderPpsv3Status(info) {

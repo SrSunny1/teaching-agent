@@ -383,11 +383,16 @@ textarea {
   background: var(--bg-panel);
   color: var(--text-dim);
   font-size: var(--fs-sm);
-  transition: border-color var(--dur-fast), color var(--dur-fast);
+  transition: border-color var(--dur-fast), color var(--dur-fast), transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow var(--dur-fast);
 }
-.chip:hover {
-  border-color: var(--border-strong);
+.chip:hover:not(:disabled) {
+  border-color: var(--accent-border);
   color: var(--text);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(107, 159, 255, 0.14);
+}
+.chip:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
 }
 .chip.mono {
   font-family: var(--font-mono);
@@ -483,10 +488,12 @@ textarea {
   border-radius: var(--r-md);
   background: var(--bg-panel);
   overflow: hidden;
-  transition: border-color var(--dur-fast);
+  transition: border-color var(--dur-fast), transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease;
 }
 .tool-card:hover {
-  border-color: var(--border-strong);
+  border-color: var(--accent-border);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
 }
 .tool-card.running {
   border-color: var(--accent-border);
@@ -980,4 +987,158 @@ textarea {
   .artifact {
     display: none;
   }
+}
+
+/* ── 活泼动画与奶龙表情包组件 ── */
+@keyframes nl-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(1.5deg); }
+}
+@keyframes nl-wiggle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.12) rotate(-8deg); }
+  50% { transform: scale(1.15) rotate(6deg); }
+  75% { transform: scale(1.1) rotate(-4deg); }
+}
+@keyframes nl-pop-in {
+  0% { opacity: 0; transform: translateY(12px) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes nl-pulse-ring {
+  0%, 100% { box-shadow: 0 8px 28px rgba(251, 191, 36, 0.28), 0 0 0 0 rgba(251, 191, 36, 0.35); }
+  50% { box-shadow: 0 12px 34px rgba(251, 191, 36, 0.42), 0 0 0 8px rgba(251, 191, 36, 0); }
+}
+
+.brand-mark {
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand:hover .brand-mark {
+  animation: nl-wiggle 520ms ease;
+}
+.nav-item {
+  transition: background var(--dur-fast), color var(--dur-fast), transform 160ms ease;
+}
+.nav-item:hover:not(:disabled) {
+  transform: translateX(3px);
+}
+
+.nl-hero-avatar {
+  animation: nl-float 3.4s ease-in-out infinite, nl-pulse-ring 3.4s ease-in-out infinite;
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+.nl-hero-avatar:hover {
+  animation: nl-wiggle 560ms ease;
+}
+
+.nl-mascot-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 14px auto 6px;
+}
+.nl-sticker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  animation: nl-pop-in 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 180ms ease, box-shadow 180ms ease;
+}
+.nl-sticker-btn:hover {
+  border-color: #fbbf24;
+  color: var(--text);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.18);
+}
+.nl-sticker-btn img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: transform 220ms ease;
+}
+.nl-sticker-btn:hover img {
+  animation: nl-wiggle 520ms ease;
+}
+
+.nl-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  animation: nl-pop-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nl-streaming-pet {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  padding: 3px 10px 3px 5px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  animation: nl-pop-in 220ms ease;
+}
+.nl-streaming-pet img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nl-sidebar-pet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 10px 8px;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 180ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background 180ms ease;
+}
+.nl-sidebar-pet:hover {
+  border-color: #fbbf24;
+  transform: translateY(-2px);
+}
+.nl-sidebar-pet img {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  animation: nl-float 3s ease-in-out infinite;
+}
+.nl-sidebar-pet:hover img {
+  animation: nl-wiggle 500ms ease;
+}
+.nl-sidebar-pet-text {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.nl-sidebar-pet-sub {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
 }

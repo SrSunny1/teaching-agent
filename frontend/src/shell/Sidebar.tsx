@@ -6,6 +6,7 @@ import { IconChat } from './icons'
 
 interface Props {
   onOpenReport: () => void
+  onOpenFeedback: () => void
   reportBusy: boolean
   collapsed: boolean
   features: FeatureModule[]
@@ -34,8 +35,17 @@ const menuPos = (e: { clientX: number; clientY: number }) => ({
   y: Math.min(e.clientY, window.innerHeight - 90),
 })
 
+const SIDEBAR_PETS = [
+  { img: '/nailong/cute.png', line: '金相磨样先粗后细，每换砂纸转 90° 哦～' },
+  { img: '/nailong/wave.gif', line: '45 钢淬火完别忘了回火，不然脆得很！' },
+  { img: '/nailong/peek.gif', line: '4% 硝酸酒精腐蚀几秒就够，盯紧镜面！' },
+  { img: '/nailong/confused.webp', line: 'BCC 配位数是 8，FCC 和 HCP 都是 12～' },
+  { img: '/nailong/received.webp', line: '收到！实验做完记得清理台面与危废液！' },
+]
+
 export default function Sidebar({
   onOpenReport,
+  onOpenFeedback,
   reportBusy,
   collapsed,
   features,
@@ -51,6 +61,8 @@ export default function Sidebar({
 }: Props) {
   const [menu, setMenu] = useState<CtxMenu | null>(null)
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null)
+  const [petIdx, setPetIdx] = useState(0)
+  const pet = SIDEBAR_PETS[petIdx % SIDEBAR_PETS.length]
 
   /* Esc 关闭右击菜单 */
   useEffect(() => {
@@ -145,6 +157,9 @@ export default function Sidebar({
         <button className="nav-item" disabled={reportBusy} onClick={onOpenReport} style={{ color: 'var(--accent)' }}>
           <span className="label">学习评价报告</span>
         </button>
+        <button className="nav-item" onClick={onOpenFeedback} title="把使用中的问题、建议反馈给教师与开发者">
+          <span className="label">意见反馈</span>
+        </button>
         {/* ── 对话（每条互不干扰） ── */}
         <div className="sidebar-section">对话</div>
         <button
@@ -188,6 +203,18 @@ export default function Sidebar({
             {activeModuleKey === f.id && renderThreads(f.id)}
           </div>
         ))}
+      </div>
+
+      <div
+        className="nl-sidebar-pet"
+        onClick={() => setPetIdx((i) => i + 1)}
+        title="点我换一张奶龙表情包 + 实验小贴士"
+      >
+        <img src={pet.img} alt="奶龙实验伴学" />
+        <div style={{ minWidth: 0 }}>
+          <div className="nl-sidebar-pet-text">{pet.line}</div>
+          <div className="nl-sidebar-pet-sub">点奶龙换表情 ({(petIdx % SIDEBAR_PETS.length) + 1}/{SIDEBAR_PETS.length})</div>
+        </div>
       </div>
 
       <div className="sidebar-foot">

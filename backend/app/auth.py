@@ -27,6 +27,7 @@ def connect():
     CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, student TEXT NOT NULL, expires REAL NOT NULL);
     CREATE TABLE IF NOT EXISTS records (student TEXT PRIMARY KEY, body TEXT NOT NULL, revision INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS attempts (student TEXT PRIMARY KEY, count INTEGER NOT NULL, until REAL NOT NULL);
+    CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, student TEXT NOT NULL, body TEXT NOT NULL, context TEXT NOT NULL DEFAULT '', ts REAL NOT NULL);
     ''')
     try:
         with db:
@@ -44,8 +45,8 @@ def password_hash(password, salt):
 
 
 class Credentials(BaseModel):
-    studentId: str = Field(pattern=r'^[A-Za-z0-9_-]{4,32}$')
-    password: str = Field(min_length=10, max_length=128)
+    studentId: str = Field(min_length=1, max_length=64)
+    password: str = Field(min_length=1, max_length=128)
 
 
 def student(authorization: str = Header(default='')):
@@ -72,32 +73,38 @@ def throttle(db, name):
 
 @router.post('/register')
 def register(req: Credentials):
+    name = req.studentId.strip()
+    if not name:
+        raise HTTPException(400, '账号名不能为空')
     with connect() as db:
-        throttle(db, req.studentId)
+        throttle(db, name)
         db.execute('BEGIN IMMEDIATE')
-        exists = db.execute('SELECT id FROM users WHERE id=?', (req.studentId,)).fetchone()
+        exists = db.execute('SELECT id FROM users WHERE id=?', (name,)).fetchone()
         if exists:
-            raise HTTPException(400, '该学号已注册，请登录或联系教师重置密码')
+            raise HTTPException(400, '该账号已注册，请登录或联系教师重置密码')
         salt = secrets.token_hex(16)
-        db.execute('INSERT INTO users VALUES (?,?,?)', (req.studentId, salt, password_hash(req.password, salt)))
-        db.execute('DELETE FROM invites WHERE id=?', (req.studentId,))
-        db.execute('DELETE FROM attempts WHERE student=?', (req.studentId,))
+        db.execute('INSERT INTO users VALUES (?,?,?)', (name, salt, password_hash(req.password, salt)))
+        db.execute('DELETE FROM invites WHERE id=?', (name,))
+        db.execute('DELETE FROM attempts WHERE student=?', (name,))
     return {'ok': True}
 
 
 @router.post('/login')
 def login(req: Credentials):
+    name = req.studentId.strip()
+    if not name:
+        raise HTTPException(400, '账号名不能为空')
     with connect() as db:
-        throttle(db, req.studentId)
-        row = db.execute('SELECT * FROM users WHERE id=?', (req.studentId,)).fetchone()
+        throttle(db, name)
+        row = db.execute('SELECT * FROM users WHERE id=?', (name,)).fetchone()
         actual = password_hash(req.password, row['salt'] if row else '00' * 16)
         if not row or not hmac.compare_digest(actual, row['password']):
-            raise HTTPException(401, '学号或密码错误')
+            raise HTTPException(401, '账号或密码错误')
         token = secrets.token_urlsafe(32)
         db.execute('DELETE FROM sessions WHERE expires<=?', (time.time(),))
-        db.execute('INSERT INTO sessions VALUES (?,?,?)', (digest(token), req.studentId, time.time() + 8 * 3600))
-        db.execute('DELETE FROM attempts WHERE student=?', (req.studentId,))
-    return {'studentId': req.studentId, 'token': token}
+        db.execute('INSERT INTO sessions VALUES (?,?,?)', (digest(token), name, time.time() + 8 * 3600))
+        db.execute('DELETE FROM attempts WHERE student=?', (name,))
+    return {'studentId': name, 'token': token}
 
 
 @router.post('/logout')
@@ -108,8 +115,8 @@ def logout(who=Depends(student), authorization: str = Header(default='')):
 
 
 class PasswordChange(BaseModel):
-    oldPassword: str = Field(min_length=10, max_length=128)
-    newPassword: str = Field(min_length=10, max_length=128)
+    oldPassword: str = Field(min_length=1, max_length=128)
+    newPassword: str = Field(min_length=1, max_length=128)
 
 
 @router.post('/password')
@@ -149,3 +156,42 @@ def save_records(req: RecordUpdate, who=Depends(student)):
             raise HTTPException(409, '其他窗口已更新记录，请导出当前记录备份后重新登录，避免覆盖')
         db.execute('INSERT OR REPLACE INTO records VALUES (?,?,?)', (who, body, req.revision + 1))
     return {'revision': req.revision + 1}
+
+
+class Feedback(BaseModel):
+    content: str = Field(min_length=1, max_length=4000)
+    context: str = Field(default='', max_length=200)
+
+
+@router.post('/feedback')
+def submit_feedback(req: Feedback, who=Depends(student)):
+    body = req.content.strip()
+    if not body:
+        raise HTTPException(400, '意见内容不能为空')
+    with connect() as db:
+        db.execute(
+            'INSERT INTO feedback (student, body, context, ts) VALUES (?,?,?,?)',
+            (who, body, req.context.strip()[:200], time.time()),
+        )
+    return {'ok': True}
+
+
+@router.get('/feedback')
+def list_feedback(who=Depends(student)):
+    with connect() as db:
+        rows = db.execute(
+            'SELECT id, student, body, context, ts FROM feedback WHERE student=? ORDER BY id DESC LIMIT 300',
+            (who,),
+        ).fetchall()
+    return {
+        'items': [
+            {
+                'id': r['id'],
+                'studentId': r['student'],
+                'content': r['body'],
+                'context': r['context'],
+                'time': r['ts'],
+            }
+            for r in rows
+        ]
+    }

@@ -13,6 +13,29 @@ const EXAMPLES = [
   { t: '面心立方晶胞有多少个原子？', d: '加载 3D 晶体结构' },
 ]
 
+const NAILONG_STICKERS = [
+  {
+    img: '/nailong/wave.gif',
+    label: '奶龙打招呼',
+    quote: '嗨～今天做金相、硬度还是热处理实验？点我随时开问！',
+  },
+  {
+    img: '/nailong/peek.gif',
+    label: '盯紧制样细节',
+    prompt: '金相试样磨制和抛光时最容易踩哪些坑？',
+  },
+  {
+    img: '/nailong/confused.webp',
+    label: '相图怎么看？',
+    prompt: '用好懂的话帮我梳理铁碳相图里的关键相变点',
+  },
+  {
+    img: '/nailong/cute.png',
+    label: '考考我热处理',
+    prompt: '来一道 45 钢淬火与回火的快问快答考考我',
+  },
+]
+
 function Markdown({ children }: { children: string }) {
   return (
     <div className="md">
@@ -58,7 +81,13 @@ function AssistantMessage({ m }: { m: Message }) {
         {m.content && <Markdown>{m.content}</Markdown>}
 
         {m.streaming && (
-          <span className="caret" aria-label="生成中" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span className="caret" aria-label="生成中" />
+            <span className="nl-streaming-pet">
+              <img src="/nailong/peek.gif" alt="奶龙陪读中" />
+              <span>奶龙正在翻实验讲义…</span>
+            </span>
+          </div>
         )}
       </div>
     </div>
@@ -72,6 +101,9 @@ export default function ChatStream({ messages, onSend }: {
   const scrollRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
   const lastUserMessageRef = useRef<string | undefined>(undefined)
+  const [mascotQuote, setMascotQuote] = useState<string>(
+    '点下面任意一只奶龙，快速开启实验问答～',
+  )
   const latestUserMessageId = [...messages].reverse().find((message) => message.role === 'user')?.id
 
   // 只在用户贴着底部时才自动滚动，避免打断向上翻阅
@@ -101,22 +133,64 @@ export default function ChatStream({ messages, onSend }: {
         <div className="chat-inner" style={{ paddingTop: 60 }}>
           <div style={{ textAlign: 'center', marginBottom: 26 }}>
             <img
+              className="nl-hero-avatar"
               src="/agent-logo.png"
               alt=""
+              onClick={() =>
+                setMascotQuote('奶龙拍了拍自己的圆肚皮：今天也要把实验原理搞得明明白白！')
+              }
+              title="点我一下试试"
               style={{
                 display: 'block',
                 margin: '0 auto 14px',
-                width: 72,
-                height: 72,
+                width: 76,
+                height: 76,
                 borderRadius: '50%',
                 objectFit: 'cover',
                 objectPosition: '47.5% 50%',
                 boxShadow: '0 8px 28px rgba(96, 68, 200, 0.35)',
               }}
             />
-            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 6 }}>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, marginBottom: 4 }}>
               材料物理实验教学 Agent
             </div>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
+              《材料科学基础》7 大实验 · 劳动教育 · 原文溯源伴学
+            </div>
+
+            <div className="nl-mascot-strip">
+              {NAILONG_STICKERS.map((s, idx) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="nl-sticker-btn"
+                  style={{ animationDelay: `${idx * 65}ms` }}
+                  onClick={() => {
+                    if (s.prompt) {
+                      onSend(s.prompt)
+                    } else if (s.quote) {
+                      setMascotQuote(s.quote)
+                    }
+                  }}
+                >
+                  <img src={s.img} alt={s.label} />
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {mascotQuote && (
+              <div>
+                <span className="nl-toast">
+                  <img
+                    src="/nailong/cute.png"
+                    alt=""
+                    style={{ width: 20, height: 20, objectFit: 'contain' }}
+                  />
+                  <span>{mascotQuote}</span>
+                </span>
+              </div>
+            )}
           </div>
 
           <div

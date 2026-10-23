@@ -8,6 +8,8 @@
     MSRAG_AUTOSTART=0   关闭自动拉起
     MSRAG_DIR=<路径>    原 RAG 系统目录（默认 ../RAG/材料智能体/材料科学RAG系统）
     MSRAG_PORT=<端口>   端口（默认沿用原系统 8765）
+    MSRAG_BIND=<地址>   监听地址（默认原系统的 127.0.0.1；设 0.0.0.0 后
+                        局域网里别人访问 http://<你的IP>:8765 也能打开完整版）
 """
 from __future__ import annotations
 
@@ -53,6 +55,9 @@ def _spawn(rag_dir: Path) -> None:
     port = os.environ.get("MSRAG_PORT", "").strip()
     if port:
         cmd += ["--port", port]
+    bind = os.environ.get("MSRAG_BIND", "").strip()
+    if bind:
+        cmd += ["--host", bind]
     # 输出写临时文件，不占终端、也不污染原系统目录
     out = open(Path(tempfile.gettempdir()) / "msrag-autostart.log", "ab")
     kwargs: dict = {"cwd": str(rag_dir), "stdout": out, "stderr": out, "stdin": subprocess.DEVNULL}
