@@ -4,7 +4,6 @@ import type {
   Artifact,
   ConnectionState,
   FeatureModule,
-  Message,
   SSEEvent,
   SessionStats,
 } from '../lib/types'
@@ -17,12 +16,13 @@ import {
   draftId,
   isDraftId,
   loadStore,
+  latestArtifact,
   moduleKeyOf,
   newConvId,
   resolveConvKey,
   saveStore,
 } from '../lib/history'
-import type { ConvMeta } from '../lib/history'
+import type { ConvMeta, StoredMessage as Message } from '../lib/history'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import ChatStream from './ChatStream'
@@ -45,7 +45,7 @@ const MODULE_ALIASES: Record<string, string[]> = {
   mistakeBook: ['错题', '错题集', '错题本', '材料科学错题集'],
   module2: ['知识库', 'rag', '材料科学rag', '构建你的知识库', '模块2', '模块二'],
   module4: ['金相', '金相组织', '组织辨析', '金相组织辨析', '微观组织', '金相分析'],
-  module1: ['模块1', '模块一'],
+  module1: ['模块1', '模块一', '图谱', '知识图谱', '问题图谱', '课程图谱', '知识点'],
 }
 
 const NAV_VERBS = [
@@ -155,7 +155,13 @@ export default function App() {
   const [currentConv, setCurrentConv] = useState<Record<string, string>>(initial.currentConv)
   const [activeConvKey, setActiveConvKey] = useState<string>(initial.activeConvKey)
 
-  const [artifact, setArtifact] = useState<Artifact | null>(null)
+  const [artifact, setArtifact] = useState<Artifact | null>(() =>
+    latestArtifact(initial.conversations[initial.activeConvKey] ?? []),
+  )
+  const savedArtifact = latestArtifact(conversations[activeConvKey] ?? [])
+  useEffect(() => {
+    setArtifact(savedArtifact)
+  }, [activeConvKey, savedArtifact])
   /**
    * 右栏画布是否展开。
    *
@@ -193,10 +199,13 @@ export default function App() {
 
   /* ── 历史落库：变更后防抖 400ms 写 localStorage ── */
   useEffect(() => {
-    const t = setTimeout(() => {
-      saveStore({ conversations, metas, currentConv, activeConvKey })
-    }, 400)
-    return () => clearTimeout(t)
+    const persist = () => saveStore({ conversations, metas, currentConv, activeConvKey })
+    const t = setTimeout(persist, 400)
+    window.addEventListener('pagehide', persist)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('pagehide', persist)
+    }
   }, [conversations, metas, currentConv, activeConvKey])
 
   /** 当前对话的 key —— 发送时捕获它，保证回复写回原来的对话，而不是写到用户已切走的那条 */
@@ -389,7 +398,10 @@ export default function App() {
           //   「3D 模块的组件 + 检索结果的 data」→ 组件读不到 atoms，显示空白。
           if (!owner) return
 
-          setArtifact({ artifactType: e.artifactType, data: e.data })
+          const snapshot = { artifactType: e.artifactType, data: e.data }
+          setConv(streamConvKeyRef.current, (p) =>
+            patchMsg(p, asstId, (m) => ({ ...m, artifact: snapshot })),
+          )
 
           // ★ 全局对话里触发了模块产物：把整条对话搬进该模块的当前会话（没有就现开一条），
           //   并自动切过去。后续 token 继续写到新 key（streamConvKeyRef）。
@@ -433,7 +445,7 @@ export default function App() {
             setActiveConvKey(tid)
             // 与左栏点模块一致：展示型模块自动展开画布，对话型模块保持收起。
             setPanelOpen(Boolean(owner.autoOpenCanvas))
-          } else if (owner.autoOpenCanvas) {
+          } else if (owner.autoOpenCanvas && streamConvKeyRef.current === convKeyRef.current) {
             // 已经在模块对话里：只按 autoOpenCanvas 决定要不要抢屏。
             setPanelOpen(true)
           }
@@ -602,7 +614,7 @@ export default function App() {
           'shell',
           pageMode ? 'page-mode' : '',
           !pageMode && noArtifact ? 'no-artifact' : '',
-          canvasFull ? 'canvas-full' : '',
+          canvasFull && !pageMode ? 'canvas-full' : '',
           sidebarOpen ? '' : 'sidebar-collapsed',
         ]
         .filter(Boolean)

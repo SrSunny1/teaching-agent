@@ -67,7 +67,7 @@ export function Component({ onSendMessage }: FeatureProps) {
         <h3>完整界面在整页模式</h3>
         <p>总览、文献库、智能问答、设置四个页面全部由原系统提供，点击左栏「知识库RAG」即可进入。</p>
         <p>
-          服务未启动时：双击 <code>材料科学RAG系统/启动.bat</code> 或在该目录执行 <code>python start.py</code>。
+          服务未启动时：教学 Agent 会自动拉起；也可手动双击 <code>rag-system/启动.bat</code>。
         </p>
         <div className="kbc-row">
           <button className="kbc-btn" onClick={() => window.open(preview.baseUrl, '_blank')}>

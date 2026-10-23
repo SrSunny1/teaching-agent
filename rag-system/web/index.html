@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>材料科学 RAG 知识库</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="bg-layer" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/dashboard">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="32" height="32" role="img">
+          <g fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.5">
+            <path d="M20 3.5 L34.2 11.6 L34.2 28.4 L20 36.5 L5.8 28.4 L5.8 11.6 Z"/>
+            <path d="M20 3.5 L20 20 M34.2 11.6 L20 20 M5.8 11.6 L20 20 M20 20 L20 36.5 M20 20 L34.2 28.4 M20 20 L5.8 28.4"/>
+          </g>
+          <g fill="currentColor">
+            <circle cx="20" cy="3.5" r="2.1"/>
+            <circle cx="34.2" cy="11.6" r="1.7" opacity="0.75"/>
+            <circle cx="34.2" cy="28.4" r="1.7" opacity="0.75"/>
+            <circle cx="20" cy="36.5" r="1.7" opacity="0.75"/>
+            <circle cx="5.8" cy="28.4" r="1.7" opacity="0.75"/>
+            <circle cx="5.8" cy="11.6" r="1.7" opacity="0.75"/>
+            <circle cx="20" cy="20" r="3.1"/>
+          </g>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-title">材料科学 RAG 知识库</span>
+        <span class="brand-sub" id="brandSub">加载中…</span>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="主导航">
+      <a class="nav-item" href="#/dashboard" data-route="dashboard">总览</a>
+      <a class="nav-item" href="#/library" data-route="library">文献库</a>
+      <a class="nav-item" href="#/assistant" data-route="assistant">智能问答</a>
+      <a class="nav-item" href="#/settings" data-route="settings">设置</a>
+    </nav>
+
+    <div class="topbar-actions">
+      <span class="llm-chip" id="llmChip" hidden></span>
+      <button class="icon-btn" id="themeToggle" type="button" title="切换亮色 / 暗色主题" aria-label="切换主题"></button>
+    </div>
+  </div>
+</header>
+
+<main class="container" id="main">
+
+  <!-- ============ 总览 ============ -->
+  <section class="view" id="view-dashboard" hidden>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">总览</h1>
+        <p class="page-desc">知识库规模、系统运行能力与最近入库文献一览。</p>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="dashStats"></div>
+
+    <div class="grid-2">
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">系统能力</h2>
+          <span class="panel-note" id="capNote"></span>
+        </div>
+        <div class="panel-body" id="dashCap"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">快速提问</h2>
+        </div>
+        <div class="panel-body">
+          <form class="quick-ask" id="quickAskForm" autocomplete="off">
+            <input class="input" id="quickAskInput" type="text" placeholder="例如：高熵合金的强化机制有哪些？">
+            <button class="btn btn-primary" type="submit">提问</button>
+          </form>
+          <p class="hint">回车即跳转到智能问答，并自动预填该问题。</p>
+          <div class="quick-tags" id="quickTags"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">最近上传</h2>
+        <a class="link" href="#/library">查看全部文献 →</a>
+      </div>
+      <div class="panel-body"><div class="recent-list" id="dashRecent"></div></div>
+    </section>
+  </section>
+
+  <!-- ============ 文献库 ============ -->
+  <section class="view" id="view-library" hidden>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">文献库</h1>
+        <p class="page-desc">上传 PDF / DOCX / TXT，或直接粘贴文本，系统会自动解析、切分并建立向量索引。</p>
+      </div>
+    </div>
+
+    <div class="upload-row">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="上传文件">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 16V4"/><path d="M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/>
+        </svg>
+        <p class="dz-title">拖拽文件到此处，或点击选择</p>
+        <p class="dz-sub">上传后自动完成解析 → 切分 → 向量化，可多选</p>
+        <input type="file" id="fileInput" hidden multiple>
+      </div>
+      <div class="upload-side">
+        <button class="btn btn-ghost" id="pasteBtn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v2H9z"/><path d="M16 5.5h2.5A1.5 1.5 0 0 1 20 7v12a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V7a1.5 1.5 0 0 1 1.5-1.5H8"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg>
+          粘贴文本建库
+        </button>
+        <p class="hint">没有文件？直接粘贴论文正文、实验记录或笔记即可入库。</p>
+        <div class="upload-queue" id="uploadQueue"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+        <input class="input" id="libSearch" type="search" placeholder="搜索标题 / 来源 / 标签…" autocomplete="off">
+      </div>
+      <select class="select" id="libStatus" aria-label="状态筛选">
+        <option value="">全部状态</option>
+        <option value="ready">已就绪</option>
+        <option value="uploaded">已上传</option>
+        <option value="queued">排队中</option>
+        <option value="parsing">解析中</option>
+        <option value="chunking">切分中</option>
+        <option value="embedding">向量化中</option>
+        <option value="failed">失败</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <span class="muted small" id="libCount"></span>
+      <button class="btn btn-ghost btn-sm" id="libRefresh" type="button">刷新</button>
+    </div>
+
+    <div class="doc-grid" id="libGrid"></div>
+    <div id="libEmpty" hidden></div>
+  </section>
+
+  <!-- ============ 智能问答 ============ -->
+  <section class="view" id="view-assistant" hidden>
+    <div class="chat-layout">
+      <aside class="conv-pane" id="convPane">
+        <div class="conv-head">
+          <h2 class="pane-title">会话</h2>
+          <button class="btn btn-ghost btn-sm" id="convNew" type="button">新建</button>
+        </div>
+        <div class="conv-list" id="convList"></div>
+      </aside>
+
+      <div class="chat-pane">
+        <div class="chat-head">
+          <button class="icon-btn conv-toggle" id="convToggle" type="button" title="会话列表" aria-label="会话列表"></button>
+          <div class="chat-head-text">
+            <span class="chat-title" id="chatTitle">未选择会话</span>
+            <span class="muted small" id="chatSub"></span>
+          </div>
+          <div class="chat-head-actions" id="chatActions"></div>
+        </div>
+
+        <div class="chat-scroll" id="chatScroll">
+          <div class="chat-messages" id="chatMessages"></div>
+          <div id="chatEmpty"></div>
+        </div>
+
+        <div class="composer">
+          <div class="composer-settings" id="composerSettings" hidden>
+            <div class="set-row">
+              <label class="set-label" for="topKInput">召回段落数 top_k</label>
+              <input class="range" id="topKRange" type="range" min="1" max="20" step="1" value="6">
+              <input class="input input-num" id="topKInput" type="number" min="1" max="20" step="1" value="6">
+            </div>
+            <div class="set-row set-row-col">
+              <label class="set-label">限定文献范围（默认：全库）</label>
+              <div class="doc-picker" id="docPicker"></div>
+            </div>
+          </div>
+          <div class="composer-row">
+            <button class="icon-btn" id="settingsToggle" type="button" title="检索设置" aria-label="检索设置"></button>
+            <textarea class="textarea" id="chatInput" rows="1" placeholder="输入你的材料科学问题…（Enter 发送，Shift+Enter 换行）"></textarea>
+            <button class="btn btn-primary" id="sendBtn" type="button">发送</button>
+            <button class="btn btn-ghost" id="stopBtn" type="button" hidden>停止</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 设置 ============ -->
+  <section class="view" id="view-settings" hidden>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">设置</h1>
+        <p class="page-desc">在这里填写 API Key 与解析选项。保存后写入项目根目录的 <code class="md-code">.env</code>，并立即生效，无需重启服务。</p>
+      </div>
+      <span class="llm-chip" id="settingsChip"></span>
+    </div>
+
+    <div id="settingsGroups"></div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">ppsV3 版面解析环境</h2>
+        <button class="btn btn-ghost btn-sm" id="ppsv3DetectBtn" type="button">重新检测</button>
+      </div>
+      <div class="panel-body">
+        <div id="ppsv3Status" class="muted small">加载中…</div>
+        <p class="hint">PP-StructureV3 需要 Python 3.9~3.11 且已安装 paddleocr。插件会通过子进程调用它；环境不可用时自动降级到内置解析器，不影响入库。</p>
+      </div>
+    </section>
+  </section>
+
+</main>
+
+<div class="drawer-root" id="drawerRoot" hidden>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer-panel" id="drawerPanel" role="dialog" aria-modal="true" aria-label="详情">
+    <div class="drawer-head">
+      <div class="drawer-head-text" id="drawerTitle">详情</div>
+      <button class="icon-btn" id="drawerClose" type="button" title="关闭" aria-label="关闭">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+</div>
+
+<div class="modal-root" id="modalRoot" hidden>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h3 class="modal-title" id="modalTitle">标题</h3>
+      <button class="icon-btn" id="modalClose" type="button" title="关闭" aria-label="关闭">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast-root" id="toastRoot" aria-live="polite" aria-atomic="false"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -8,8 +8,8 @@
 # 结论：边界靠自觉 —— 改别人模块之前，先在群里说一声。
 #
 # 当前状态（2026-10-20）：
-#   - 7 个模块：module1（名字待定）+ 已定名的 module2（知识库）/ mistakeBook /
-#     module4 / visual3d / feynman
+#   - 6 个模块：module1（课程图谱）/ module2（知识库）/ mistakeBook /
+#     module4 / visual3d / feynman，全部已定名
 #   - 原模块 3 已由 mistakeBook（材料科学错题集）取代；原模块 5、6 已删除
 #   - pageDemo 已移到 frontend/src/reference/pageDemo/，不再注册到左栏
 #   - 框架（壳）由 SrSunny1 独占，他同时负责 visual3d / feynman
@@ -39,8 +39,9 @@
 
 # ─────────── 模块 1~2 与插件 ───────────
 
-# A
-/frontend/src/features/module1/       @A
+# SrSunny1
+/frontend/src/features/module1/       @SrSunny1
+/backend/app/tools/query_graph/       @SrSunny1
 
 # B / 周星宇
 /frontend/src/features/module2/       @B

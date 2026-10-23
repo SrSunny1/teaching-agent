@@ -184,7 +184,6 @@ export default function Sidebar({
               title={f.title}
             >
               <span className="label">{f.title}</span>
-              {f.artifactTypes.length > 0 && <span className="nav-badge">画布</span>}
             </button>
             {activeModuleKey === f.id && renderThreads(f.id)}
           </div>

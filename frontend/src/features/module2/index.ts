@@ -11,7 +11,8 @@ import { preview } from './preview'
  * 后端 materials_rag 工具按原系统 sdk/agent_tools.json 的定义包装其 HTTP API，
  * 供教学智能体检索 / 问答 / 入库；与原系统共用同一套 API，无独立鉴权。
  *
- * 原 RAG 服务默认 http://127.0.0.1:8765（启动：材料科学RAG系统/启动.bat）。
+ * 原 RAG 服务默认 http://127.0.0.1:8765：教学 Agent 后端启动时自动拉起它
+ * （backend/app/rag_autostart.py，已在运行则跳过），评委无需手动双击启动.bat。
  * 启用/禁用：顶栏「插件」开关，或 localStorage 键 plugin.knowledgeBase.enabled。
  * 禁用后左栏入口保留，页面显示「插件已禁用」卡片，可一键启用——避免入口消失后找不回来。
  */

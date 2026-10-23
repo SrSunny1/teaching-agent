@@ -1,0 +1,62 @@
+id: materials-science-rag
+name: 材料科学 RAG 知识库
+version: 1.0.0
+kind: rag-plugin
+description: >
+  面向材料科学领域的检索增强知识库插件。支持 PDF/Markdown/文本入库、
+  混合检索（语义向量 + BM25）、带证据引用的生成式回答与段落级溯源。
+  核心功能对第三方包零依赖，可作为独立服务运行，也可嵌入其它智能体工程。
+
+entrypoint:
+  command: python start.py
+  args: ["--no-browser"]
+  working_directory: "."
+  healthcheck:
+    method: GET
+    path: /health
+    expect_status: 200
+    timeout_seconds: 60
+
+default_base_url: http://127.0.0.1:8765
+transport: http-json
+auth: none
+
+capabilities:
+  ingest:
+    formats: [".pdf", ".md", ".markdown", ".txt"]
+    max_upload_mb: 50
+    ocr: optional          # paddleocr 安装后启用
+  retrieval:
+    dense: true            # 语义向量（可降级为哈希向量）
+    sparse: true           # BM25
+    hybrid: true
+  generation:
+    streaming: true        # SSE
+    citations: true        # 段落级引用与溯源
+    fallback: extractive   # 无 LLM 时降级为证据摘录
+  multi_tenant: false      # 已移除登录 / 用户 / 管理员
+
+tools_file: sdk/agent_tools.json
+client_sdk: sdk/materials_rag_client.py
+
+endpoints:
+  - { name: status,    method: GET,  path: /api/meta }
+  - { name: search,    method: POST, path: /api/search }
+  - { name: ask,       method: POST, path: /api/ask }
+  - { name: ingest_text,  method: POST, path: /api/documents/text }
+  - { name: ingest_file,  method: POST, path: /api/documents/upload }
+  - { name: documents,    method: GET,  path: /api/documents }
+  - { name: evidence,     method: GET,  path: "/api/chunks/{chunk_id}" }
+
+configuration:
+  file: .env
+  template: .env.example
+  key_variables:
+    - MSRAG_PORT
+    - MSRAG_LLM_API_KEY
+    - MSRAG_LLM_BASE_URL
+    - MSRAG_LLM_MODEL
+    - MSRAG_EMBEDDING_PROVIDER
+    - MSRAG_EMBEDDING_API_KEY
+    - MSRAG_TOP_K
+    - MSRAG_PARSER_MODE

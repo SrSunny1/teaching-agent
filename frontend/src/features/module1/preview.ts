@@ -1,11 +1,5 @@
 /**
- * 模块1 —— 开发预览数据。
- *
- * 在左栏点这个模块时，画布就用这份数据渲染，**不需要后端、不需要 API Key**。
- * 做组件时先改这里，改完存盘浏览器自动刷新，立刻能看到效果。
+ * 画布预览数据：图谱本身是前端静态数据，这里只告诉壳「默认打开知识图谱」。
+ * 点左栏「课程图谱」时不带任何聚焦，展示完整的星系图。
  */
-export default {
-  // TODO: 换成你这个模块真实的数据形状
-  placeholder: true,
-  note: '模块1 的样例数据，请在 preview.ts 里替换',
-}
+export const preview = { mode: 'knowledge' as const, focus: null as string | null }

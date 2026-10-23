@@ -25,9 +25,15 @@
 原系统自带完整能力：PDF/Markdown 入库、混合检索（语义向量 + BM25）、带证据引用的
 生成式回答与段落级溯源。接口契约见其 `sdk/agent_tools.json` 与 `sdk/plugin.yaml`。
 
-**连接判定**：iframe `onLoad` → 已连接；6 秒未触发 → 判定未启动，显示启动指引
-（双击 `材料科学RAG系统/启动.bat` 或 `python start.py`）。服务地址可在顶栏地址框改
-（存 localStorage 键 `plugin.knowledgeBase.baseUrl`，默认 `http://127.0.0.1:8765`）。
+**连接判定**：iframe `onLoad` → 已连接；6 秒未触发 → 显示「启动中」卡片并**自动轮询重连**
+（每 2 秒探测 `/api/meta`，就绪后自动刷新 iframe，评委无需任何操作）。
+服务地址可在顶栏地址框改（存 localStorage 键 `plugin.knowledgeBase.baseUrl`，默认 `http://127.0.0.1:8765`）。
+
+**自动启动**：教学 Agent 后端启动时由 `backend/app/rag_autostart.py` 探测并拉起
+**项目内置的 `rag-system/`**（`start.py --no-browser --no-smoke`，**已在运行则跳过**；
+外置原系统目录仅作兜底，`MSRAG_AUTOSTART=0` 可关闭，`MSRAG_DIR` 可指定目录）。
+内置副本带一份预置知识库快照（`data/msrag.db` + `vectors.json` + `uploads/`），
+别人拿到项目无需手动启动、无需重新灌库。原系统代码一行不改。
 
 ## 二、后端工具 materials_rag（与原系统共用同一套 API）
 
@@ -85,6 +91,7 @@
 
 - `frontend/src/features/module2/`
 - `backend/app/tools/materials_rag/`
+- `backend/app/rag_autostart.py`（自动拉起逻辑）
 
-**原系统目录 `材料科学RAG系统/` 一律不碰。** 提交前跑 `python scripts/check-boundaries.py`
-与 `cd frontend && npx tsc -b`。
+**内置的 `rag-system/` 原系统代码一律不碰**（它是随仓库分发的原样副本，改需求请回原项目改完再同步）。
+提交前跑 `python scripts/check-boundaries.py` 与 `cd frontend && npx tsc -b`。

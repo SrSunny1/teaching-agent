@@ -1,0 +1,1787 @@
+{
+  "nodes": [
+    {
+      "id": "root",
+      "label": "材料物理实验",
+      "fullTitle": "材料物理实验 · 结构—工艺—组织—性能主线",
+      "level": 1,
+      "sector": 0,
+      "parent": null,
+      "type": "",
+      "desc": "课程总纲：以「微观结构 — 制备与热处理工艺 — 相与显微组织 — 力学/热学/电学性能」四面体为主线，贯穿 7 个核心实验。",
+      "refs": [
+        "教学大纲·材料物理专业实验1/2；教材 总论"
+      ]
+    },
+    {
+      "id": "micro",
+      "label": "晶体结构与缺陷",
+      "fullTitle": "晶体结构与缺陷",
+      "level": 2,
+      "sector": 0,
+      "parent": "root",
+      "type": "",
+      "desc": "实验一：FCC/BCC/HCP 典型晶体结构、四/八面体间隙、晶面晶向标定、密排堆垛与位错缺陷。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "crystal",
+      "label": "凝固与结晶",
+      "fullTitle": "凝固与结晶",
+      "level": 2,
+      "sector": 1,
+      "parent": "root",
+      "type": "",
+      "desc": "实验二：合金熔炼、结晶热力学与结构条件、形核与长大、冷却曲线过冷度及 NH4Cl 盐类结晶观察。",
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "phase",
+      "label": "相图与相变",
+      "fullTitle": "相图与相变",
+      "level": 2,
+      "sector": 2,
+      "parent": "root",
+      "type": "相",
+      "desc": "实验四/二十：吉布斯自由能、二元/三元相图、Fe-C 相图共析与共晶转变、铁碳平衡组织。",
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验四"
+      ]
+    },
+    {
+      "id": "nature",
+      "label": "显微组织表征",
+      "fullTitle": "显微组织表征",
+      "level": 2,
+      "sector": 3,
+      "parent": "root",
+      "type": "组织",
+      "desc": "实验三/四：相与组织概念辨析、单相与双相衬度、晶粒与晶界、金相显微镜与 20 种典型材料观察。",
+      "refs": [
+        "课程讲义·金相试样制备；教材 实验三/四"
+      ]
+    },
+    {
+      "id": "process",
+      "label": "制样与热处理工艺",
+      "fullTitle": "制样与热处理工艺",
+      "level": 2,
+      "sector": 4,
+      "parent": "root",
+      "type": "工艺",
+      "desc": "实验三/二十：金相取样—镶样—磨光—抛光—腐蚀全流程，以及钢的退火、正火、淬火、回火与表面淬火。",
+      "refs": [
+        "课程讲义·金相试样制备；课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "property",
+      "label": "性能测试与强化",
+      "fullTitle": "性能测试与强化",
+      "level": 2,
+      "sector": 5,
+      "parent": "root",
+      "type": "性能",
+      "desc": "实验十/十二/二十：布氏/洛氏/维氏显微硬度、四大强化机制、PCY 热膨胀系数与相变点测定、导热与导电性能。",
+      "refs": [
+        "课程讲义·表面硬度的测定；课程讲义·膨胀系数测定"
+      ]
+    },
+    {
+      "id": "lattice",
+      "label": "FCC / BCC / HCP 晶胞",
+      "fullTitle": "面心立方（FCC）、体心立方（BCC）和密排六方（HCP）",
+      "level": 3,
+      "sector": 0,
+      "parent": "micro",
+      "type": "",
+      "desc": "三种典型金属结构：FCC（4原子/配位数12/致密度74%）、BCC（2原子/配位数8/致密度68%）、HCP（6原子/配位数12/致密度74%）。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "atomradius",
+      "label": "原子半径与致密度推导",
+      "fullTitle": "原子半径与致密度推导",
+      "level": 4,
+      "sector": 0,
+      "parent": "lattice",
+      "type": "",
+      "desc": "刚球模型下由「最近邻原子相切」几何条件推导原子半径 r 与晶格常数 a 的关系（FCC 面对角线相切、BCC 体对角线相切），而非死背查表。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "coordpack",
+      "label": "晶胞原子数与配位数",
+      "fullTitle": "晶胞原子数与配位数",
+      "level": 4,
+      "sector": 0,
+      "parent": "lattice",
+      "type": "",
+      "desc": "按顶点 1/8、面心 1/2、体心 1、晶内 1 折算单胞原子数；配位数表征最近邻等距原子个数，直接决定致密度高低。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "gap",
+      "label": "四面体与八面体间隙",
+      "fullTitle": "晶体结构中四面体间隙与八面体间隙的位置、分布与半径",
+      "level": 3,
+      "sector": 0,
+      "parent": "micro",
+      "type": "",
+      "desc": "晶胞内由 4 个或 6 个刚球围成的空隙：其位置、个数与间隙半径 rB/rA 决定了碳、氮等间隙原子的溶解度与占位。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "octagap",
+      "label": "八面体间隙分布与半径",
+      "fullTitle": "八面体间隙分布与半径",
+      "level": 4,
+      "sector": 0,
+      "parent": "gap",
+      "type": "",
+      "desc": "FCC 八面体间隙位于体心与 12 条棱中点（共 4 个，rB/rA=0.414）；BCC 八面体间隙位于面心与棱中点（共 6 个，扁八面体）。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "tetragap",
+      "label": "四面体间隙分布与半径",
+      "fullTitle": "四面体间隙分布与半径",
+      "level": 4,
+      "sector": 0,
+      "parent": "gap",
+      "type": "",
+      "desc": "FCC 四面体间隙位于 8 个小立方体体心（体对角线 1/4 处，共 8 个，rB/rA=0.225）；BCC 四面体间隙位于各面四分位点（共 12 个，rB/rA=0.291）。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "miller",
+      "label": "晶面指数与晶向指数",
+      "fullTitle": "晶面指数 (hkl) 与晶向指数 [uvw] 的标定方法",
+      "level": 3,
+      "sector": 0,
+      "parent": "micro",
+      "type": "",
+      "desc": "利用截距倒数化整标定 (hkl) 晶面指数、矢量坐标化整标定 [uvw] 晶向指数；HCP 采用四轴坐标系 (hkil)。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "stacking",
+      "label": "密排面堆垛与滑移系",
+      "fullTitle": "密排面的堆垛顺序（ABCABC / ABAB）、密排面与密排方向",
+      "level": 3,
+      "sector": 0,
+      "parent": "micro",
+      "type": "",
+      "desc": "FCC {111} 密排面按 ABCABC 三层重复堆垛，HCP (0001) 按 ABAB 两层堆垛；密排面 + 密排方向组成滑移系，决定金属塑性优劣。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "slipsys",
+      "label": "滑移系与塑性各向异性",
+      "fullTitle": "滑移系与塑性各向异性",
+      "level": 4,
+      "sector": 0,
+      "parent": "stacking",
+      "type": "性能",
+      "desc": "FCC 拥有 4×3=12 个高对称滑移系，塑性极佳；HCP 独立滑移系少，表现出明显塑性各向异性。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "dislocation",
+      "label": "刃型·螺型·混合位错",
+      "fullTitle": "刃型位错、螺型位错与混合位错的原子排布及柏氏矢量",
+      "level": 3,
+      "sector": 0,
+      "parent": "micro",
+      "type": "缺陷",
+      "desc": "晶体线缺陷：刃型位错柏氏矢量垂直位错线（含额外半原子面），螺型平行，混合位错斜交；通过柏氏回路判定。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "dislmotion",
+      "label": "位错滑移与 Frank-Read 增殖",
+      "fullTitle": "位错滑移与 Frank-Read 增殖",
+      "level": 4,
+      "sector": 0,
+      "parent": "dislocation",
+      "type": "缺陷",
+      "desc": "位错沿滑移面切应力方向滑移是塑性变形的微观机制；两端钉扎位错段在切应力下弓出循环（Frank-Read 源）实现位错大量增殖。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "dislinter",
+      "label": "位错交割·塞积与不全位错",
+      "fullTitle": "位错交割·塞积与不全位错",
+      "level": 4,
+      "sector": 0,
+      "parent": "dislocation",
+      "type": "缺陷",
+      "desc": "运动位错相交产生割阶/扭折；在晶界或第二相前塞积造成应力集中；全位错可分解为肖克利不全位错并夹扩展层错。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "thermo",
+      "label": "结晶热力学条件",
+      "fullTitle": "结晶热力学条件",
+      "level": 3,
+      "sector": 1,
+      "parent": "crystal",
+      "type": "",
+      "desc": "液固两相体积自由能随温度变化在平衡熔点 Tm 处相交；只有冷至 Tm 以下（过冷 ΔT > 0，ΔGv < 0）才具备结晶热力学驱动力。",
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "structcond",
+      "label": "结晶结构条件（晶坯）",
+      "fullTitle": "结晶结构条件（晶坯）",
+      "level": 4,
+      "sector": 1,
+      "parent": "thermo",
+      "type": "",
+      "desc": "液态金属中存在短程有序、时聚时散的原子集团（结构起伏/晶坯）；过冷至 T0 以下经孕育期后晶坯长大为稳定晶核。",
+      "refs": [
+        "课程讲义·结晶与凝固"
+      ]
+    },
+    {
+      "id": "crystphenom",
+      "label": "冷却曲线与过冷度 ΔT",
+      "fullTitle": "金属的结晶现象：冷却曲线、结晶潜热与过冷度",
+      "level": 3,
+      "sector": 1,
+      "parent": "crystal",
+      "type": "",
+      "desc": "热分析冷却曲线上的水平平台对应结晶潜热释放与实际结晶温度 T1；过冷度 ΔT = T0 − T1 随冷却速度增大而显著提高。",
+      "refs": [
+        "课程讲义·结晶与凝固"
+      ]
+    },
+    {
+      "id": "nucleation",
+      "label": "晶核形成（均匀/非均匀）",
+      "fullTitle": "晶核形成（均匀/非均匀）",
+      "level": 3,
+      "sector": 1,
+      "parent": "crystal",
+      "type": "",
+      "desc": "晶核半径必须跨过临界晶核半径 r* 才能稳定长大；实际金属多依附容器壁或高熔点杂质进行非均匀形核（形核功更低）。",
+      "refs": [
+        "课程讲义·结晶与凝固"
+      ]
+    },
+    {
+      "id": "growth",
+      "label": "晶体长大与过冷细晶",
+      "fullTitle": "晶体长大与过冷细晶",
+      "level": 3,
+      "sector": 1,
+      "parent": "crystal",
+      "type": "",
+      "desc": "结晶由形核率 N 与长大速度 G 共同控制：增大过冷度使 N 比 G 增长更快，从而显著细化最终铸态晶粒。",
+      "refs": [
+        "课程讲义·结晶与凝固"
+      ]
+    },
+    {
+      "id": "growthform",
+      "label": "生长形态与成分过冷",
+      "fullTitle": "生长形态与成分过冷",
+      "level": 4,
+      "sector": 1,
+      "parent": "growth",
+      "type": "组织",
+      "desc": "温度梯度与成分过冷决定固液界面形态（平面晶、胞状晶、树枝晶）；不同冷却条件导致晶核大小与枝晶粗细显著差异。",
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "nh4cl",
+      "label": "NH4Cl 盐类结晶观察",
+      "fullTitle": "NH4Cl 盐类结晶观察",
+      "level": 4,
+      "sector": 1,
+      "parent": "crystphenom",
+      "type": "工艺",
+      "desc": "采用透明过饱和 NH4Cl 水溶液「转换法」模拟金属结晶：对比培养皿空冷、显微镜下空冷、烧杯/试管空冷、撒晶种粉末、冰上急冷 7 种条件下的形核与树枝晶生长。",
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "crystmethod",
+      "label": "蒸发结晶与降温结晶",
+      "fullTitle": "蒸发结晶与降温结晶",
+      "level": 4,
+      "sector": 1,
+      "parent": "crystphenom",
+      "type": "工艺",
+      "desc": "溶液结晶的两种基本路径：蒸发溶剂提高浓度达到过饱和，或降低温度减小溶解度促使溶质析出形核。",
+      "refs": [
+        "教材 实验二"
+      ]
+    },
+    {
+      "id": "melting",
+      "label": "电弧熔炼与感应熔炼",
+      "fullTitle": "电弧熔炼与感应熔炼",
+      "level": 4,
+      "sector": 1,
+      "parent": "nucleation",
+      "type": "工艺",
+      "desc": "合金制备的两种核心熔炼设备：电弧熔炼利用高温电弧熔化高熔点金属，高频感应熔炼利用涡流加热并兼具电磁搅拌均质作用。",
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "gibbs",
+      "label": "吉布斯自由能与相平衡",
+      "fullTitle": "吉布斯自由能与相平衡",
+      "level": 3,
+      "sector": 2,
+      "parent": "phase",
+      "type": "相",
+      "desc": "相变总是向吉布斯自由能 G 降低的方向进行；公切线法则与化学势相等是判定二元多相平衡的热力学基准。",
+      "refs": [
+        "课程讲义·结晶与凝固"
+      ]
+    },
+    {
+      "id": "phasediagram",
+      "label": "二元与三元相图法则",
+      "fullTitle": "二元与三元相图法则",
+      "level": 3,
+      "sector": 2,
+      "parent": "phase",
+      "type": "相",
+      "desc": "相图表示平衡状态下成分、温度与相组成的关系；利用杠杆定律计算两相相对含量，识别匀晶、共晶、共析与包晶三相线。",
+      "refs": [
+        "课程讲义·结晶与凝固"
+      ]
+    },
+    {
+      "id": "fec",
+      "label": "Fe-C 相图与关键转变",
+      "fullTitle": "二元 Fe-C 铁碳平衡相图（共析转变与共晶转变）",
+      "level": 3,
+      "sector": 2,
+      "parent": "phase",
+      "type": "相",
+      "desc": "钢铁材料组织判读的总地图：涵盖包晶、1148℃ 共晶转变（L → A + Fe3CⅠ）与 727℃ 共析转变（A → F + Fe3CⅡ）。",
+      "refs": [
+        "课程讲义·金属材料热处理；教材 实验四"
+      ]
+    },
+    {
+      "id": "fcbasic",
+      "label": "铁素体 F 与渗碳体 Fe3C",
+      "fullTitle": "铁素体 F 与渗碳体 Fe3C",
+      "level": 4,
+      "sector": 2,
+      "parent": "fec",
+      "type": "相",
+      "desc": "所有碳钢和白口铸铁的室温平衡组织均由铁素体（BCC 软韧相，溶碳 <0.0218%）与渗碳体（Fe3C 硬脆金属化合物）两个基本相组合而成。",
+      "refs": [
+        "教材 实验四"
+      ]
+    },
+    {
+      "id": "pearlite",
+      "label": "珠光体 P（共析产物）",
+      "fullTitle": "珠光体 P（共析产物）",
+      "level": 5,
+      "sector": 2,
+      "parent": "fcbasic",
+      "type": "组织",
+      "desc": "0.77%C 奥氏体在 727℃ 发生共析转变，铁素体与渗碳体交替生核形成片层状珠光体；片层间距越细，强度硬度越高。",
+      "refs": [
+        "教材 实验四；课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "ledeburite",
+      "label": "莱氏体 Ld（共晶产物）",
+      "fullTitle": "莱氏体 Ld（共晶产物）",
+      "level": 5,
+      "sector": 2,
+      "parent": "fcbasic",
+      "type": "组织",
+      "desc": "4.30%C 铁水在 1148℃ 发生共晶转变生成奥氏体与渗碳体混合物（高温莱氏体），室温下转变为珠光体 + 渗碳体的变态莱氏体。",
+      "refs": [
+        "教材 实验四"
+      ]
+    },
+    {
+      "id": "carbonsteel",
+      "label": "铁碳合金室温组织谱（表6-1）",
+      "fullTitle": "铁碳合金室温组织谱（表6-1）",
+      "level": 3,
+      "sector": 2,
+      "parent": "phase",
+      "type": "组织",
+      "desc": "随含碳量递增：工业纯铁（F）→ 亚共析钢（F+P）→ 共析钢（P）→ 过共析钢（P+Fe3CⅡ）→ 亚共晶/共晶/过共晶白口铸铁（含 Ld）。",
+      "refs": [
+        "教材 实验四 · 表6-1"
+      ]
+    },
+    {
+      "id": "hyposteel",
+      "label": "亚共析·共析·过共析钢",
+      "fullTitle": "亚共析·共析·过共析钢",
+      "level": 4,
+      "sector": 2,
+      "parent": "carbonsteel",
+      "type": "组织",
+      "desc": "碳钢（0.02~2.11%C）经 4% 硝酸酒精腐蚀后，凭铁素体白亮块、珠光体暗色片层及晶界网状二次渗碳体区分三类碳钢。",
+      "refs": [
+        "教材 实验四 · 表6-1"
+      ]
+    },
+    {
+      "id": "phasevs",
+      "label": "相与组织的概念辨析",
+      "fullTitle": "相（Phases）与微观组织（Microstructure）的区别与联系",
+      "level": 3,
+      "sector": 3,
+      "parent": "nature",
+      "type": "相",
+      "desc": "相（Phase）是成分与晶体结构均匀的组成部分；组织（Microstructure）是单相或多相在空间按特定形态、大小与分布组合而成的整体貌相。",
+      "refs": [
+        "课程讲义·金相试样制备；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "single",
+      "label": "单相组织（纯铁/纯铜/纯铝）",
+      "fullTitle": "单相组织（纯铁/纯铜/纯铝）",
+      "level": 4,
+      "sector": 3,
+      "parent": "phasevs",
+      "type": "相",
+      "desc": "单相多晶体腐蚀时因各晶粒结晶学取向不同、溶解速率有别而呈明暗台阶，晶界处原子能量高、优先腐蚀成沟槽显露。",
+      "refs": [
+        "课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "dual",
+      "label": "双相组织（铁素体+渗碳体）",
+      "fullTitle": "双相组织（铁素体+渗碳体）",
+      "level": 4,
+      "sector": 3,
+      "parent": "phasevs",
+      "type": "相",
+      "desc": "双相或多相合金中各相电化学电位不同，在腐蚀液中形成微电池：阳极相受侵蚀凹陷发暗、阴极相凸起发亮（如片层状珠光体）。",
+      "refs": [
+        "课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "grain",
+      "label": "晶粒与晶界结构特征",
+      "fullTitle": "晶粒（有序排列）与晶界（高能无序过渡区）及与裂纹的区别",
+      "level": 3,
+      "sector": 3,
+      "parent": "nature",
+      "type": "组织",
+      "desc": "晶粒内部原子按周期点阵有序排列；晶界是不同取向晶粒间的过渡区，原子排列无序、畸变能高、常温下阻碍位错滑移。",
+      "refs": [
+        "课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "microstructure",
+      "label": "钢铁典型组织（F/P/M/Ld）",
+      "fullTitle": "钢铁典型组织（F/P/M/Ld）",
+      "level": 3,
+      "sector": 3,
+      "parent": "nature",
+      "type": "组织",
+      "desc": "同一化学成分在不同冷速与热处理下可形成铁素体、珠光体、贝氏体、马氏体等截然不同的显微组织，直接决定宏观性能。",
+      "refs": [
+        "课程讲义·金相试样制备；课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "microprop",
+      "label": "显微组织对力学性能调控",
+      "fullTitle": "显微组织对力学性能调控",
+      "level": 4,
+      "sector": 3,
+      "parent": "microstructure",
+      "type": "性能",
+      "desc": "细小均匀组织提高强韧性；马氏体高硬但脆；网状渗碳体或粗大晶粒割裂基体、显著降低塑性与冲击韧性。",
+      "refs": [
+        "教材 实验四；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "microobs",
+      "label": "典型材料金相观察（实验四）",
+      "fullTitle": "典型材料金相观察（实验四）",
+      "level": 3,
+      "sector": 3,
+      "parent": "nature",
+      "type": "组织",
+      "desc": "综合观察钢铁、有色金属、陶瓷与高分子 4 大类（大纲要求 20 种试样）的微观形貌，建立成分—工艺—组织对应关系。",
+      "refs": [
+        "教材 实验四；教学大纲·材料物理专业实验1/2"
+      ]
+    },
+    {
+      "id": "microscope",
+      "label": "金相显微镜构造与使用",
+      "fullTitle": "金相显微镜构造与使用",
+      "level": 4,
+      "sector": 3,
+      "parent": "microobs",
+      "type": "工艺",
+      "desc": "由照明系统、物镜/目镜光学系统与载物台调焦机构组成；操作时先粗调后细调，严防调焦过猛把物镜浸入残留腐蚀液。",
+      "refs": [
+        "教材 实验三；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "specimens",
+      "label": "钢铁·有色·陶瓷·高分子金相",
+      "fullTitle": "钢铁·有色·陶瓷·高分子金相",
+      "level": 4,
+      "sector": 3,
+      "parent": "microobs",
+      "type": "组织",
+      "desc": "对比观察 20 种典型材料试样的晶粒形态、相分布、气孔与夹杂特征，绘制不少于 3 个区域的组织示意图。",
+      "refs": [
+        "教材 实验四；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "sampleprep",
+      "label": "金相试样制备五步法",
+      "fullTitle": "金相样品的制备（取样→镶样→磨光→抛光→腐蚀）",
+      "level": 3,
+      "sector": 4,
+      "parent": "process",
+      "type": "工艺",
+      "desc": "标准流程：取样 → 镶样/夹持 → 粗磨与细磨 → 抛光 → 化学腐蚀；任一环节失误都会引入假象或掩盖真实显微组织。",
+      "refs": [
+        "课程讲义·金相试样制备；教材 实验三"
+      ]
+    },
+    {
+      "id": "sampling",
+      "label": "代表性取样与镶嵌夹持",
+      "fullTitle": "代表性取样与镶嵌夹持",
+      "level": 4,
+      "sector": 4,
+      "parent": "sampleprep",
+      "type": "工艺",
+      "desc": "按研究目的选取横/纵截面并防止切割过热改变组织；小或异形试样采用机械夹持或电木粉热固性塑料镶嵌固定。",
+      "refs": [
+        "课程讲义·金相试样制备；教材 实验三"
+      ]
+    },
+    {
+      "id": "grinding",
+      "label": "粗磨平整与细磨转 90°",
+      "fullTitle": "粗磨平整与细磨转 90°",
+      "level": 4,
+      "sector": 4,
+      "parent": "sampleprep",
+      "type": "工艺",
+      "desc": "粗磨整平并倒角防划破织物；细磨依次更换由粗到细金相砂纸，坚持「单程单向」且每换一号砂纸将试样旋转 90° 直至旧磨痕全消。",
+      "refs": [
+        "课程讲义·金相试样制备；教材 实验三"
+      ]
+    },
+    {
+      "id": "polishing",
+      "label": "机械/电解/化学抛光",
+      "fullTitle": "机械/电解/化学抛光",
+      "level": 4,
+      "sector": 4,
+      "parent": "sampleprep",
+      "type": "工艺",
+      "desc": "去除细磨残留磨痕与表层加工变形层以获得光滑镜面；机械抛光常用抛光布配合 W7~W0.25 氧化铝/金刚石抛光粉（W7 表最粗粒径 7μm）。",
+      "refs": [
+        "课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "defects",
+      "label": "制样缺陷：划痕·拖尾·变形层",
+      "fullTitle": "制样缺陷：划痕·拖尾·变形层",
+      "level": 5,
+      "sector": 4,
+      "parent": "polishing",
+      "type": "缺陷",
+      "desc": "磨抛用力过猛、砂纸混入粗砂或抛光不足会造成粗划痕、彗星拖尾、表面沾污、水渍及加工硬化变形层等假象。",
+      "refs": [
+        "课程讲义·金相试样制备；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "defectfix",
+      "label": "缺陷排除与浸蚀清洗吹干",
+      "fullTitle": "缺陷排除与浸蚀清洗吹干",
+      "level": 5,
+      "sector": 4,
+      "parent": "polishing",
+      "type": "工艺",
+      "desc": "用力均匀、及时换水冲洗；腐蚀后立即用酒精清洗并热风吹干，防止残留腐蚀液继续侵蚀造成过腐蚀或水迹。",
+      "refs": [
+        "课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "etch",
+      "label": "化学腐蚀原理与常用腐蚀剂",
+      "fullTitle": "腐蚀的目的和原理及常用腐蚀剂选择",
+      "level": 3,
+      "sector": 4,
+      "parent": "process",
+      "type": "工艺",
+      "desc": "利用各相或晶界耐蚀性差异形成凹凸形貌，经显微镜光线反射产生明暗衬度；不腐蚀的镜面只能看见夹杂物、石墨、孔洞与裂纹。",
+      "refs": [
+        "课程讲义·金相试样制备"
+      ]
+    },
+    {
+      "id": "etchant",
+      "label": "硝酸酒精·王水·氢氟酸配比",
+      "fullTitle": "硝酸酒精·王水·氢氟酸配比",
+      "level": 4,
+      "sector": 4,
+      "parent": "etch",
+      "type": "工艺",
+      "desc": "碳钢与低合金钢用 1~5% 硝酸酒精溶液，高合金钢与不锈钢用王水（盐酸3:硝酸1），铝及铝合金用 0.5% 氢氟酸水溶液。",
+      "refs": [
+        "课程讲义·金相试样制备 · 常用腐蚀剂表"
+      ]
+    },
+    {
+      "id": "heattreat",
+      "label": "热处理工艺三要素",
+      "fullTitle": "合理的热处理工艺：加热温度、保温时间与冷却速度",
+      "level": 3,
+      "sector": 4,
+      "parent": "process",
+      "type": "工艺",
+      "desc": "加热温度、保温时间、冷却方式与介质是决定热处理后组织转变与力学性能的三大核心工艺参数。",
+      "refs": [
+        "课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "httemp",
+      "label": "临界温度选择（Ac1 / Ac3）",
+      "fullTitle": "临界温度选择（Ac1 / Ac3）",
+      "level": 4,
+      "sector": 4,
+      "parent": "heattreat",
+      "type": "工艺",
+      "desc": "淬火与完全退火加热至临界温度以上 30~50℃ 实现奥氏体化；保温时间须保证工件心部透烧并完成相变。",
+      "refs": [
+        "课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "htcool",
+      "label": "冷却介质（炉冷/空冷/水油冷）",
+      "fullTitle": "冷却介质（炉冷/空冷/水油冷）",
+      "level": 4,
+      "sector": 4,
+      "parent": "heattreat",
+      "type": "工艺",
+      "desc": "冷却速度决定过冷奥氏体转变产物：随炉缓冷得平衡珠光体，空冷得细珠光体，水冷或油冷跨过鼻尖得高硬度马氏体。",
+      "refs": [
+        "课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "fourfires",
+      "label": "热处理四把火与表面淬火",
+      "fullTitle": "金属材料热处理四把火：退火、正火、淬火、回火",
+      "level": 3,
+      "sector": 4,
+      "parent": "process",
+      "type": "工艺",
+      "desc": "退火、正火、淬火、回火四把火配合表面淬火，实现碳钢从软化切削到高强耐磨的全范围性能调控。",
+      "refs": [
+        "课程讲义·金属材料热处理；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "anneal",
+      "label": "退火（随炉冷）与正火（空冷）",
+      "fullTitle": "退火（随炉冷）与正火（空冷）",
+      "level": 4,
+      "sector": 4,
+      "parent": "fourfires",
+      "type": "工艺",
+      "desc": "退火随炉缓冷以降低硬度、消除内应力、细化组织；正火在空气中冷却，冷速更快、珠光体片层更细，强度硬度略高于退火。",
+      "refs": [
+        "课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "quench",
+      "label": "淬火马氏体硬化与表面淬火",
+      "fullTitle": "淬火马氏体硬化与表面淬火",
+      "level": 4,
+      "sector": 4,
+      "parent": "fourfires",
+      "type": "工艺",
+      "desc": "淬火水/油快冷获得高硬度马氏体（45钢水淬 >55 HRC）；表面淬火仅快速加热表层淬硬，兼顾表层耐磨与心部强韧。",
+      "refs": [
+        "课程讲义·金属材料热处理；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "temper",
+      "label": "高·中·低温回火温度—硬度律",
+      "fullTitle": "高·中·低温回火温度—硬度律",
+      "level": 4,
+      "sector": 4,
+      "parent": "fourfires",
+      "type": "工艺",
+      "desc": "淬火钢重加热至 Ac1 以下消除内应力：低温回火（150~250℃，45钢 57~60 HRC，刃具）、中温回火（350~500℃，40~48 HRC，弹簧）、高温回火（500~650℃，25~35 HRC，调质轴类）。",
+      "refs": [
+        "课程讲义·金属材料热处理；教材 实验二十"
+      ]
+    },
+    {
+      "id": "hardness",
+      "label": "静载压入硬度测定（实验十）",
+      "fullTitle": "表面硬度的测定：布氏（HB）、洛氏（HR）与维氏（HV）",
+      "level": 3,
+      "sector": 5,
+      "parent": "property",
+      "type": "性能",
+      "desc": "硬度表征材料表面抵抗局部塑性变形、压痕或划痕的能力；按压头与载荷分为布氏 HB、洛氏 HR 与维氏 HV。",
+      "refs": [
+        "课程讲义·表面硬度的测定；教材 实验十"
+      ]
+    },
+    {
+      "id": "vickers",
+      "label": "维氏显微硬度计与零位校准",
+      "fullTitle": "维氏显微硬度计与零位校准",
+      "level": 4,
+      "sector": 5,
+      "parent": "hardness",
+      "type": "性能",
+      "desc": "采用 136° 正四棱锥金刚石压头压入抛光面，测量压痕两对角线 d1、d2 均值算 HV；测量前必须校准测微目镜 0 刻度并按软硬选准试验力。",
+      "refs": [
+        "课程讲义·表面硬度的测定；教材 实验十"
+      ]
+    },
+    {
+      "id": "hardsample",
+      "label": "硬度试样镜面抛光与影响因素",
+      "fullTitle": "硬度试样镜面抛光与影响因素",
+      "level": 4,
+      "sector": 5,
+      "parent": "hardness",
+      "type": "性能",
+      "desc": "维氏压痕极小，试样表面必须抛光成镜面才能看清压痕顶点；同种金属的硬度取决于含碳量、显微组织类型与热处理状态。",
+      "refs": [
+        "课程讲义·表面硬度的测定；课程讲义·金属材料热处理"
+      ]
+    },
+    {
+      "id": "harden",
+      "label": "金属四大强化机制",
+      "fullTitle": "增强硬度与强度的方法：固溶强化、细晶强化与相变强化",
+      "level": 3,
+      "sector": 5,
+      "parent": "property",
+      "type": "性能",
+      "desc": "通过阻碍位错运动提高材料强度与硬度：固溶强化、细晶强化、位错加工硬化与马氏体相变强化。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；课程讲义·表面硬度的测定"
+      ]
+    },
+    {
+      "id": "solidsolution",
+      "label": "固溶强化（间隙/置换固溶）",
+      "fullTitle": "固溶强化（间隙/置换固溶）",
+      "level": 4,
+      "sector": 5,
+      "parent": "harden",
+      "type": "性能",
+      "desc": "溶质原子溶入基体晶格引起球对称或非对称晶格畸变应力场，强烈阻碍位错滑移，使固溶体硬度高于纯金属。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "finegrain",
+      "label": "细晶强化（同时强韧化）",
+      "fullTitle": "细晶强化（同时强韧化）",
+      "level": 4,
+      "sector": 5,
+      "parent": "harden",
+      "type": "性能",
+      "desc": "晶粒越细、单位体积内晶界总面积越大，不同取向晶粒协调变形并分散位错塞积应力集中，唯一同时提高强度硬度和塑韧性的机制。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验四"
+      ]
+    },
+    {
+      "id": "expansion",
+      "label": "热膨胀系数测定（实验十二）",
+      "fullTitle": "材料热膨胀机理与线膨胀系数测定",
+      "level": 3,
+      "sector": 5,
+      "parent": "property",
+      "type": "性能",
+      "desc": "热膨胀源于点阵原子热振动的非简谐性；原子结合能越强、熔点 Tm 越高，势能阱越深窄，线膨胀系数 α 越小（α·Tm ≈ 0.022）。",
+      "refs": [
+        "课程讲义·膨胀系数测定；教材 实验十二"
+      ]
+    },
+    {
+      "id": "dilatometer",
+      "label": "PCY 热膨胀仪与千分尺清零",
+      "fullTitle": "PCY 热膨胀仪与千分尺清零",
+      "level": 4,
+      "sector": 5,
+      "parent": "expansion",
+      "type": "工艺",
+      "desc": "试样装入石英管前必须对千分尺清零；计算平均线膨胀系数 α = (ΔLt − Kt)/(L0·ΔT) 时须扣除石英管与推杆的系统补偿值 Kt。",
+      "refs": [
+        "课程讲义·膨胀系数测定；教材 实验十二"
+      ]
+    },
+    {
+      "id": "expphase",
+      "label": "膨胀曲线拐点测相变温度",
+      "fullTitle": "膨胀曲线拐点测相变温度",
+      "level": 4,
+      "sector": 5,
+      "parent": "expansion",
+      "type": "性能",
+      "desc": "同素异构转变或固态相变伴随点阵重排与比容突变，导致温度—膨胀量曲线出现明显拐点（斜率突变），据此精确测定相变温度。",
+      "refs": [
+        "课程讲义·膨胀系数测定；教材 实验十二"
+      ]
+    },
+    {
+      "id": "thermal",
+      "label": "导热与导电微观机理",
+      "fullTitle": "热学导热与电学导电性能的微观结构相关性",
+      "level": 3,
+      "sector": 5,
+      "parent": "property",
+      "type": "性能",
+      "desc": "热传导有传导、对流、辐射三种方式；金属靠自由电子导热导电，晶界、缺陷、固溶畸变（如高熵合金）及非晶无序结构均强烈散射电子、降低电导与热导；多孔材料依靠气孔隔热且热膨胀低。",
+      "refs": [
+        "课程讲义·膨胀系数测定；课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "hea",
+      "label": "高熵合金与非晶导电特征",
+      "fullTitle": "高熵合金与非晶导电特征",
+      "level": 4,
+      "sector": 5,
+      "parent": "thermal",
+      "type": "性能",
+      "desc": "高熵合金多主元严重晶格畸变与非晶材料长程无序都会加剧电子散射，电阻率显著高于传统纯金属；多孔材料则兼具高比强与低热膨胀。",
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；课程讲义·膨胀系数测定"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "root",
+      "target": "micro",
+      "relation": "组成"
+    },
+    {
+      "source": "root",
+      "target": "crystal",
+      "relation": "组成"
+    },
+    {
+      "source": "root",
+      "target": "phase",
+      "relation": "组成"
+    },
+    {
+      "source": "root",
+      "target": "nature",
+      "relation": "组成"
+    },
+    {
+      "source": "root",
+      "target": "process",
+      "relation": "组成"
+    },
+    {
+      "source": "root",
+      "target": "property",
+      "relation": "组成"
+    },
+    {
+      "source": "micro",
+      "target": "lattice",
+      "relation": "组成"
+    },
+    {
+      "source": "lattice",
+      "target": "atomradius",
+      "relation": "组成"
+    },
+    {
+      "source": "lattice",
+      "target": "coordpack",
+      "relation": "组成"
+    },
+    {
+      "source": "micro",
+      "target": "gap",
+      "relation": "组成"
+    },
+    {
+      "source": "gap",
+      "target": "octagap",
+      "relation": "组成"
+    },
+    {
+      "source": "gap",
+      "target": "tetragap",
+      "relation": "组成"
+    },
+    {
+      "source": "micro",
+      "target": "miller",
+      "relation": "组成"
+    },
+    {
+      "source": "micro",
+      "target": "stacking",
+      "relation": "组成"
+    },
+    {
+      "source": "stacking",
+      "target": "slipsys",
+      "relation": "组成"
+    },
+    {
+      "source": "micro",
+      "target": "dislocation",
+      "relation": "组成"
+    },
+    {
+      "source": "dislocation",
+      "target": "dislmotion",
+      "relation": "组成"
+    },
+    {
+      "source": "dislocation",
+      "target": "dislinter",
+      "relation": "组成"
+    },
+    {
+      "source": "crystal",
+      "target": "thermo",
+      "relation": "组成"
+    },
+    {
+      "source": "thermo",
+      "target": "structcond",
+      "relation": "组成"
+    },
+    {
+      "source": "crystal",
+      "target": "crystphenom",
+      "relation": "组成"
+    },
+    {
+      "source": "crystal",
+      "target": "nucleation",
+      "relation": "组成"
+    },
+    {
+      "source": "crystal",
+      "target": "growth",
+      "relation": "组成"
+    },
+    {
+      "source": "growth",
+      "target": "growthform",
+      "relation": "组成"
+    },
+    {
+      "source": "crystphenom",
+      "target": "nh4cl",
+      "relation": "组成"
+    },
+    {
+      "source": "crystphenom",
+      "target": "crystmethod",
+      "relation": "组成"
+    },
+    {
+      "source": "nucleation",
+      "target": "melting",
+      "relation": "组成"
+    },
+    {
+      "source": "phase",
+      "target": "gibbs",
+      "relation": "组成"
+    },
+    {
+      "source": "phase",
+      "target": "phasediagram",
+      "relation": "组成"
+    },
+    {
+      "source": "phase",
+      "target": "fec",
+      "relation": "组成"
+    },
+    {
+      "source": "fec",
+      "target": "fcbasic",
+      "relation": "组成"
+    },
+    {
+      "source": "fcbasic",
+      "target": "pearlite",
+      "relation": "组成"
+    },
+    {
+      "source": "fcbasic",
+      "target": "ledeburite",
+      "relation": "组成"
+    },
+    {
+      "source": "phase",
+      "target": "carbonsteel",
+      "relation": "组成"
+    },
+    {
+      "source": "carbonsteel",
+      "target": "hyposteel",
+      "relation": "组成"
+    },
+    {
+      "source": "nature",
+      "target": "phasevs",
+      "relation": "组成"
+    },
+    {
+      "source": "phasevs",
+      "target": "single",
+      "relation": "组成"
+    },
+    {
+      "source": "phasevs",
+      "target": "dual",
+      "relation": "组成"
+    },
+    {
+      "source": "nature",
+      "target": "grain",
+      "relation": "组成"
+    },
+    {
+      "source": "nature",
+      "target": "microstructure",
+      "relation": "组成"
+    },
+    {
+      "source": "microstructure",
+      "target": "microprop",
+      "relation": "组成"
+    },
+    {
+      "source": "nature",
+      "target": "microobs",
+      "relation": "组成"
+    },
+    {
+      "source": "microobs",
+      "target": "microscope",
+      "relation": "组成"
+    },
+    {
+      "source": "microobs",
+      "target": "specimens",
+      "relation": "组成"
+    },
+    {
+      "source": "process",
+      "target": "sampleprep",
+      "relation": "组成"
+    },
+    {
+      "source": "sampleprep",
+      "target": "sampling",
+      "relation": "组成"
+    },
+    {
+      "source": "sampleprep",
+      "target": "grinding",
+      "relation": "组成"
+    },
+    {
+      "source": "sampleprep",
+      "target": "polishing",
+      "relation": "组成"
+    },
+    {
+      "source": "polishing",
+      "target": "defects",
+      "relation": "组成"
+    },
+    {
+      "source": "polishing",
+      "target": "defectfix",
+      "relation": "组成"
+    },
+    {
+      "source": "process",
+      "target": "etch",
+      "relation": "组成"
+    },
+    {
+      "source": "etch",
+      "target": "etchant",
+      "relation": "组成"
+    },
+    {
+      "source": "process",
+      "target": "heattreat",
+      "relation": "组成"
+    },
+    {
+      "source": "heattreat",
+      "target": "httemp",
+      "relation": "组成"
+    },
+    {
+      "source": "heattreat",
+      "target": "htcool",
+      "relation": "组成"
+    },
+    {
+      "source": "process",
+      "target": "fourfires",
+      "relation": "组成"
+    },
+    {
+      "source": "fourfires",
+      "target": "anneal",
+      "relation": "组成"
+    },
+    {
+      "source": "fourfires",
+      "target": "quench",
+      "relation": "组成"
+    },
+    {
+      "source": "fourfires",
+      "target": "temper",
+      "relation": "组成"
+    },
+    {
+      "source": "property",
+      "target": "hardness",
+      "relation": "组成"
+    },
+    {
+      "source": "hardness",
+      "target": "vickers",
+      "relation": "组成"
+    },
+    {
+      "source": "hardness",
+      "target": "hardsample",
+      "relation": "组成"
+    },
+    {
+      "source": "property",
+      "target": "harden",
+      "relation": "组成"
+    },
+    {
+      "source": "harden",
+      "target": "solidsolution",
+      "relation": "组成"
+    },
+    {
+      "source": "harden",
+      "target": "finegrain",
+      "relation": "组成"
+    },
+    {
+      "source": "property",
+      "target": "expansion",
+      "relation": "组成"
+    },
+    {
+      "source": "expansion",
+      "target": "dilatometer",
+      "relation": "组成"
+    },
+    {
+      "source": "expansion",
+      "target": "expphase",
+      "relation": "组成"
+    },
+    {
+      "source": "property",
+      "target": "thermal",
+      "relation": "组成"
+    },
+    {
+      "source": "thermal",
+      "target": "hea",
+      "relation": "组成"
+    },
+    {
+      "source": "atomradius",
+      "target": "gap",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "gap",
+      "target": "solidsolution",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "stacking",
+      "target": "dislmotion",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "dislmotion",
+      "target": "harden",
+      "relation": "因果"
+    },
+    {
+      "source": "dislinter",
+      "target": "finegrain",
+      "relation": "因果"
+    },
+    {
+      "source": "dislocation",
+      "target": "solidsolution",
+      "relation": "因果"
+    },
+    {
+      "source": "thermo",
+      "target": "gibbs",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "nucleation",
+      "target": "growth",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "growth",
+      "target": "grain",
+      "relation": "因果"
+    },
+    {
+      "source": "growthform",
+      "target": "microstructure",
+      "relation": "因果"
+    },
+    {
+      "source": "melting",
+      "target": "structcond",
+      "relation": "因果"
+    },
+    {
+      "source": "fec",
+      "target": "microstructure",
+      "relation": "因果"
+    },
+    {
+      "source": "fec",
+      "target": "httemp",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "fcbasic",
+      "target": "dual",
+      "relation": "对比"
+    },
+    {
+      "source": "pearlite",
+      "target": "microprop",
+      "relation": "因果"
+    },
+    {
+      "source": "carbonsteel",
+      "target": "hardsample",
+      "relation": "因果"
+    },
+    {
+      "source": "single",
+      "target": "dual",
+      "relation": "对比"
+    },
+    {
+      "source": "phasevs",
+      "target": "microstructure",
+      "relation": "对比"
+    },
+    {
+      "source": "grain",
+      "target": "finegrain",
+      "relation": "因果"
+    },
+    {
+      "source": "microprop",
+      "target": "hardness",
+      "relation": "因果"
+    },
+    {
+      "source": "sampleprep",
+      "target": "microobs",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "polishing",
+      "target": "hardsample",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "defects",
+      "target": "vickers",
+      "relation": "因果"
+    },
+    {
+      "source": "etch",
+      "target": "single",
+      "relation": "因果"
+    },
+    {
+      "source": "etch",
+      "target": "dual",
+      "relation": "因果"
+    },
+    {
+      "source": "etchant",
+      "target": "hyposteel",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "heattreat",
+      "target": "fourfires",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "htcool",
+      "target": "quench",
+      "relation": "因果"
+    },
+    {
+      "source": "anneal",
+      "target": "quench",
+      "relation": "对比"
+    },
+    {
+      "source": "quench",
+      "target": "temper",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "temper",
+      "target": "hardsample",
+      "relation": "因果"
+    },
+    {
+      "source": "fourfires",
+      "target": "microstructure",
+      "relation": "因果"
+    },
+    {
+      "source": "expphase",
+      "target": "fec",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "dilatometer",
+      "target": "expphase",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "dislocation",
+      "target": "thermal",
+      "relation": "因果"
+    }
+  ],
+  "questionNodes": [
+    {
+      "id": "q1_1",
+      "label": "在BCC、FCC和HCP三种晶体结构中，原子排列规律不同，它们的致密度、配位数分别是多少？",
+      "tier": 1,
+      "type": "理解",
+      "desc": "FCC（面心立方）：每晶胞 4 个原子，配位数 12，致密度 74%（典型金属：Cu、Al、γ-Fe）。 BCC（体心立方）：每晶胞 2 个原子，配位数 8，致密度 68%（典型金属：α-Fe、Cr、W）。 HCP（密排六方）：每晶胞 6 个原子，配位数 12，致密度 74%（典型金属：Mg、Zn、α-Ti）。",
+      "blindSpot": "容易把「晶胞原子数」与「配位数」混淆，或把 BCC 致密度误记为 74%。",
+      "knowledgeIds": [
+        "lattice",
+        "coordpack",
+        "atomradius",
+        "stacking"
+      ],
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "q1_2",
+      "label": "四面体间隙和八面体间隙的位置及半径如何求？",
+      "tier": 1,
+      "type": "理解",
+      "desc": "FCC 八面体间隙在体心和 12 条棱中点（共 4 个，rB/rA = 0.414），四面体间隙在 8 个小立方体心（共 8 个，rB/rA = 0.225）。 BCC 八面体间隙在 6 个面心和 12 条棱中点（共 6 个），四面体间隙在各面四分位点（共 12 个，rB/rA = 0.291）。 间隙半径全部由刚球模型「最近邻相切」几何关系推导，是理解碳在 α-Fe 与 γ-Fe 中溶解度差异及间隙固溶强化的基础。",
+      "blindSpot": "找不出晶胞中的所有四面体和八面体间隙，或漏算棱/面上的折算个数。",
+      "knowledgeIds": [
+        "gap",
+        "octagap",
+        "tetragap",
+        "atomradius",
+        "solidsolution"
+      ],
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "q1_3",
+      "label": "如何确定密排面指数和密排方向指数？位错对性能的影响是什么？",
+      "tier": 1,
+      "type": "理解",
+      "desc": "按截距倒数化整求 (hkl)、按矢量坐标化整求 [uvw]；FCC 的 {111} 面原子面密度最高，为密排滑移面，密排方向为 <110>。 位错沿密排面滑移使金属塑性变形所需切应力远低于理论强度；Frank-Read 源增殖与位错交割、晶界塞积则阻碍后续位错运动，产生加工硬化。",
+      "blindSpot": "不会求解密排六方（HCP）四轴坐标系中的晶面指数，或描绘不清 FCC 密排面 ABCABC 堆垛顺序。",
+      "knowledgeIds": [
+        "miller",
+        "stacking",
+        "slipsys",
+        "dislocation",
+        "dislmotion",
+        "dislinter"
+      ],
+      "refs": [
+        "课程讲义·晶体结构与晶体缺陷；教材 实验一"
+      ]
+    },
+    {
+      "id": "q1_4",
+      "label": "金属的结晶现象如何观察？",
+      "tier": 1,
+      "type": "理解",
+      "desc": "热分析法：测定金属冷却曲线，曲线上的水平平台对应结晶潜热释放与实际结晶温度 T1，过冷度 ΔT = T0 − T1。 转换观察法：用透明过饱和 NH4Cl 水溶液模拟不透明金属结晶，对比培养皿空冷、生物显微镜下空冷、小烧杯/试管空冷、撒 NH4Cl 粉末、冰上急冷等条件下的形核与树枝晶长大。",
+      "blindSpot": "绘制结晶开始、长大、完成三阶段组织示意图不规范；调节显微镜时误将物镜镜头浸入溶液。",
+      "knowledgeIds": [
+        "crystphenom",
+        "nh4cl",
+        "crystmethod",
+        "nucleation"
+      ],
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "q1_5",
+      "label": "金属结晶的热力学条件和结构条件是什么？过冷度如何影响晶粒大小？",
+      "tier": 1,
+      "type": "理解",
+      "desc": "热力学条件：液固两相自由能曲线在 Tm 相交，必须过冷至 Tm 以下（ΔT > 0，ΔGv < 0）才有结晶驱动力。 结构条件：液态金属中存在短程有序、时聚时散的晶坯（结构起伏），过冷下越过临界尺寸 r* 成为稳定晶核。 过冷度 ΔT 增大时，形核率 N 与长大速度 G 都增大，但 N 的增长比 G 快得多，故加大冷却速度/过冷度可显著细化晶粒。",
+      "blindSpot": "解释过冷度和成分过冷对晶体生长形态及最终组织粗细的影响不到位。",
+      "knowledgeIds": [
+        "thermo",
+        "structcond",
+        "growth",
+        "growthform"
+      ],
+      "refs": [
+        "课程讲义·结晶与凝固；教材 实验二"
+      ]
+    },
+    {
+      "id": "q1_6",
+      "label": "二元 Fe-C 相图中共析转变与共晶转变的特征是什么？",
+      "tier": 1,
+      "type": "理解",
+      "desc": "共析转变（727℃，0.77%C）：固态奥氏体 A 恒温同时转变为铁素体 F + 渗碳体 Fe3C，产物为片层状珠光体 P。 共晶转变（1148℃，4.30%C）：液相 L 恒温同时结晶出奥氏体 A + 渗碳体 Fe3C，产物为莱氏体 Ld。 所有碳钢和白口铸铁室温平衡组织均由铁素体与渗碳体两个基本相按不同数量与形态组合而成。",
+      "blindSpot": "",
+      "knowledgeIds": [
+        "fec",
+        "fcbasic",
+        "pearlite",
+        "ledeburite",
+        "gibbs"
+      ],
+      "refs": [
+        "课程讲义·金属材料热处理；教材 实验四"
+      ]
+    },
+    {
+      "id": "q2_1",
+      "label": "制备的试样中有哪些缺陷？测试表面硬度为什么要抛光表面？",
+      "tier": 2,
+      "type": "记忆",
+      "desc": "常见金相制样缺陷：粗划痕、彗星拖尾、水渍、表面沾污、边缘倒圆、磨抛变形层以及腐蚀过深/过浅。 维氏显微硬度压痕极小，试样必须抛光成无划痕镜面，才能在显微镜下清晰对准压痕四角并准确读出对角线 d1、d2。 排除方法：细磨坚持单程单向、换砂纸转 90°；抛光用力均匀；腐蚀后立即酒精清洗并吹干。",
+      "blindSpot": "制样过程中用力过猛导致试样表面不平整或留下粗划痕。",
+      "knowledgeIds": [
+        "sampleprep",
+        "grinding",
+        "polishing",
+        "defects",
+        "defectfix",
+        "hardsample"
+      ],
+      "refs": [
+        "课程讲义·金相试样制备；课程讲义·表面硬度的测定"
+      ]
+    },
+    {
+      "id": "q2_2",
+      "label": "晶粒和晶界处原子的能量相同吗？晶界和裂纹的区别是什么？",
+      "tier": 2,
+      "type": "理解",
+      "desc": "不同：晶粒内部原子按晶格周期有序排列、自由能低；晶界处原子处于不同取向过渡区，排列无序、点阵畸变大、能量显著更高（因此腐蚀时晶界优先被侵蚀显露）。 晶界仍是原子紧密结合的固态界面，能传递载荷并阻碍位错滑移；裂纹则是原子键断裂形成的物理空隙，会造成严重应力集中。",
+      "blindSpot": "",
+      "knowledgeIds": [
+        "grain",
+        "dislocation",
+        "dislinter",
+        "finegrain"
+      ],
+      "refs": [
+        "课程讲义·金相试样制备；课程讲义·晶体结构与晶体缺陷"
+      ]
+    },
+    {
+      "id": "q2_3",
+      "label": "相和组织的概念分别是什么？有什么联系？对性能有什么影响？",
+      "tier": 2,
+      "type": "分析",
+      "desc": "相是化学成分与晶体结构均匀的体系部分（如铁素体 F、渗碳体 Fe3C、奥氏体 A）。 组织是相在空间上按一定形态、大小、数量和分布组合而成的微观貌相（如片层状珠光体 P、针状马氏体 M）。 相同的相（F + Fe3C）因分布与粗细不同可构成不同组织，直接决定材料的强度、硬度、塑性与冲击韧性。",
+      "blindSpot": "极易把「相组成物（铁素体/渗碳体）」与「组织组成物（珠光体/莱氏体）」混为一谈。",
+      "knowledgeIds": [
+        "phasevs",
+        "microstructure",
+        "single",
+        "dual",
+        "fcbasic",
+        "pearlite",
+        "microprop"
+      ],
+      "refs": [
+        "课程讲义·金相试样制备；教材 实验四；教学大纲·材料物理专业实验2"
+      ]
+    },
+    {
+      "id": "q2_4",
+      "label": "腐蚀的目的和原理是什么？不同的材料能用同一种腐蚀剂吗？不腐蚀能观察到组织吗？",
+      "tier": 2,
+      "type": "理解",
+      "desc": "目的与原理：利用晶界与晶内能量差（单相）或各相电化学电位差（双相）产生选择性溶解，使磨面形成凹凸衬度，在显微镜反射光下显现晶界与相界。 不能通用：碳钢用 1~5% 硝酸酒精，不锈钢与高合金钢用王水，铝合金用 0.5% 氢氟酸水溶液。 不腐蚀时抛光镜面一片全亮，除石墨、非金属夹杂物、孔洞与裂纹外无法辨识晶粒和相组织。",
+      "blindSpot": "腐蚀时间把控不当导致过浅（晶界不清）或过深（表面发黑失真），或腐蚀后未及时用酒精清洗吹干。",
+      "knowledgeIds": [
+        "etch",
+        "etchant",
+        "single",
+        "dual",
+        "defectfix"
+      ],
+      "refs": [
+        "课程讲义·金相试样制备；教材 实验三"
+      ]
+    },
+    {
+      "id": "q3_1",
+      "label": "表面硬度的决定因素是什么",
+      "tier": 3,
+      "type": "分析",
+      "desc": "化学成分：含碳量与合金元素决定硬脆渗碳体数量及基体固溶强化程度。 显微组织：马氏体 > 细珠光体（正火） > 粗珠光体+铁素体（退火），组织形态直接左右硬度高低。 热处理与加工工艺：淬火冷速与回火温度可连续调控硬度（如 45 钢低温回火 57~60 HRC、中温 40~48 HRC、高温 25~35 HRC）。 测试规范：试样镜面抛光质量、载荷选择与测微目镜 0 刻度校准直接影响维氏硬度读数准确性。",
+      "blindSpot": "不能贯通「成分—工艺—显微组织—表面硬度」因果链；测压痕对角线前忘记校准 0 刻度或选错试验力。",
+      "knowledgeIds": [
+        "hardness",
+        "vickers",
+        "hardsample",
+        "harden",
+        "solidsolution",
+        "finegrain",
+        "fourfires",
+        "microprop"
+      ],
+      "refs": [
+        "课程讲义·表面硬度的测定；课程讲义·金属材料热处理；教材 实验十/二十"
+      ]
+    },
+    {
+      "id": "q3_2",
+      "label": "如何制定合适的热处理工艺",
+      "tier": 3,
+      "type": "创造",
+      "desc": "第一步（定路线）：按服役需求选择退火（软化去应力）、正火（细化预备热处理）或淬火+回火（高硬耐磨或综合调质）。 第二步（定三要素）：依据 Fe-C 相图确定加热温度（临界点 Ac1/Ac3 以上 30~50℃）、保温时间与冷却介质（炉冷/空冷/油冷/水冷）。 第三步（配回火）：淬火后必配回火——刃具量具用 150~250℃ 低温回火，弹簧模具用 350~500℃ 中温回火，齿轮连杆轴类用 500~650℃ 高温回火。",
+      "blindSpot": "制定热处理工艺时缺乏 Fe-C 相图临界点依据，或忽略淬火后必须及时回火以消除内应力与脆性。",
+      "knowledgeIds": [
+        "heattreat",
+        "httemp",
+        "htcool",
+        "fourfires",
+        "anneal",
+        "quench",
+        "temper"
+      ],
+      "refs": [
+        "课程讲义·金属材料热处理；教材 实验二十"
+      ]
+    },
+    {
+      "id": "q3_3",
+      "label": "如何测量相变温度",
+      "tier": 3,
+      "type": "应用",
+      "desc": "物理依据：金属发生同素异构转变或固态相变（如 α-Fe → γ-Fe）时点阵重排引起比容突变，热膨胀曲线斜率发生不连续转折。 实验测定：使用 PCY 型全自动热膨胀仪记录试样随温度升高的线膨胀量 ΔLt，由膨胀曲线的拐点/突变温度读取相变点。 操作要点：装入石英管前必须对千分尺清零，计算线膨胀系数时扣除测试系统补偿值 Kt。",
+      "blindSpot": "装样测量前忘记对千分尺清零；对键强、结合能及相变影响热膨胀系数的物理机理理解不透。",
+      "knowledgeIds": [
+        "expphase",
+        "expansion",
+        "dilatometer",
+        "fec",
+        "gibbs"
+      ],
+      "refs": [
+        "课程讲义·膨胀系数测定；教材 实验十二"
+      ]
+    }
+  ],
+  "questionEdges": [
+    {
+      "source": "q1_1",
+      "target": "q2_2",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_1",
+      "target": "q2_3",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_1",
+      "target": "q2_1",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_2",
+      "target": "q2_3",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_3",
+      "target": "q2_2",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_4",
+      "target": "q2_4",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_4",
+      "target": "q2_1",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_5",
+      "target": "q2_1",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_5",
+      "target": "q2_2",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q1_6",
+      "target": "q2_3",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_1",
+      "target": "q3_1",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_1",
+      "target": "q3_2",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_2",
+      "target": "q3_1",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_2",
+      "target": "q3_3",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_2",
+      "target": "q3_2",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_3",
+      "target": "q3_1",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_3",
+      "target": "q3_2",
+      "relation": "前置依赖"
+    },
+    {
+      "source": "q2_4",
+      "target": "q3_2",
+      "relation": "前置依赖"
+    }
+  ]
+}

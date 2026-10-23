@@ -40,7 +40,6 @@ for _t in _iter_tools():
 # 对应前端模块已移除的旧工具：保留在 TOOLS 里供冒烟测试与直接调用，但不再放进 specs() 喂给模型
 _RETIRED = {
     "simulate_heat_treatment",
-    "query_graph",
     "aggregate_safety_rules",
     "troubleshoot_instrument",
 }

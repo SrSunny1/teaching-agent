@@ -110,6 +110,32 @@ export function Page(_props: FeatureProps) {
     return () => window.clearTimeout(timerRef.current)
   }, [url, reloadKey])
 
+  /**
+   * 未就绪时自动重连：后端会随教学 Agent 一起拉起原 RAG 系统，
+   * 服务就绪后自动刷新 iframe —— 评委不需要手动点任何东西。
+   * 用 no-cors 探测：只要网络层连得上就算就绪，不要求原系统开 CORS。
+   */
+  useEffect(() => {
+    if (status !== 'unreachable') return
+    let alive = true
+    const probe = async () => {
+      try {
+        await fetch(`${url}/api/meta`, { mode: 'no-cors', cache: 'no-store' })
+        if (!alive) return
+        setStatus('connecting')
+        setReloadKey((k) => k + 1)
+      } catch {
+        /* 还没起来，2 秒后再试 */
+      }
+    }
+    const timer = window.setInterval(probe, 2000)
+    void probe()
+    return () => {
+      alive = false
+      window.clearInterval(timer)
+    }
+  }, [status, url])
+
   // 禁用视图放在所有 hooks 之后（保证 hooks 顺序一致），可一键启用，入口不丢
   if (!enabled) {
     return (
@@ -196,16 +222,18 @@ export function Page(_props: FeatureProps) {
         {status === 'unreachable' && (
           <div className="kb-veil">
             <div className="kb-card">
-              <h2>知识库RAG 服务未启动</h2>
+              <h2>知识库服务启动中…</h2>
               <p>
-                本页面直接呈现你已有的「材料科学RAG系统」界面，需要先把它启动起来：
+                教学 Agent 会自动拉起原「材料科学RAG系统」，就绪后本页自动接入，无需操作。
               </p>
               <p>
-                双击 <code>材料科学RAG系统/启动.bat</code>
+                <code>{url}</code>
+              </p>
+              <p>
+                若长时间无响应，可手动启动：双击 <code>rag-system/启动.bat</code>
                 <br />
                 或在该目录执行 <code>python start.py</code>（默认端口 8765）
               </p>
-              <p>启动后点「重试」即可；如果服务不在默认地址，改上方地址框再连接。</p>
               <div className="kb-actions">
                 <button className="kb-btn" onClick={() => setReloadKey((k) => k + 1)}>
                   重试

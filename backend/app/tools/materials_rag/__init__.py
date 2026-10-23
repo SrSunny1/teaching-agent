@@ -27,8 +27,9 @@ from pathlib import Path
 from ..base import Tool, ToolResult
 
 _START_HINT = (
-    "知识库服务未连接。请先启动原 RAG 系统：\n"
-    "  双击 材料科学RAG系统/启动.bat\n"
+    "知识库服务未连接。教学 Agent 启动时会自动拉起项目内置的 rag-system/；"
+    "若自动启动失败，可手动启动：\n"
+    "  双击 rag-system/启动.bat\n"
     "  或在该目录执行：python start.py\n"
     "启动后本工具即可正常调用。"
 )

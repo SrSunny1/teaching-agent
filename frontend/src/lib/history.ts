@@ -7,8 +7,20 @@
  *   - 还没说过话的草稿：`draft:<moduleKey>`。不写库、不占列表 ——
  *     点「新对话」只切到一个空草稿，发出第一条消息时才 materialize 成 conv id。
  */
-import type { Message } from './types'
+import type { Artifact, Message as ChatMessage } from './types'
 import { accountStorage as localStorage } from './account'
+
+/** 本地历史附加画布快照，不改变发送给后端的消息契约。 */
+export type StoredMessage = ChatMessage & { artifact?: Artifact }
+type Message = StoredMessage
+
+export function latestArtifact(messages: StoredMessage[]): Artifact | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const artifact = messages[i].artifact
+    if (artifact && typeof artifact.artifactType === 'string' && artifact.data != null) return artifact
+  }
+  return null
+}
 
 /** 全局对话空间的 moduleKey（不占任何模块） */
 export const GLOBAL_CONV = '__global__'

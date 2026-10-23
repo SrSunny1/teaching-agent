@@ -1,0 +1,167 @@
+{
+  "plugin": {
+    "id": "materials-science-rag",
+    "name": "材料科学 RAG 知识库",
+    "version": "1.0.0",
+    "description": "面向材料科学文献的检索增强问答插件。支持 PDF/Markdown 入库、混合检索（语义向量 + BM25）、证据引用的生成式回答与溯源。",
+    "host_env": "MSRAG_HOST",
+    "port_env": "MSRAG_PORT",
+    "default_base_url": "http://127.0.0.1:8765",
+    "start_command": "python start.py",
+    "transport": "http-json",
+    "auth": "none"
+  },
+  "system_prompt_hint": "你可以调用 materials_rag_* 系列工具查询材料科学知识库。回答时必须标注引用的 chunk_id，并且只依据检索到的证据作答；检索不到就明确说明，不要臆造。",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "materials_rag_search",
+        "description": "在材料科学知识库中检索与问题相关的原文段落（只检索，不生成回答）。当需要精确引用原文、或想先判断知识库是否覆盖某主题时使用。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "检索词或问题，例如『高熵合金 析出强化』"
+            },
+            "top_k": {
+              "type": "integer",
+              "description": "返回证据条数，默认 6，范围 1~50",
+              "default": 6
+            },
+            "document_ids": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "可选，限定在指定文献 id 内检索；留空表示全库"
+            }
+          },
+          "required": ["query"]
+        },
+        "endpoint": {
+          "method": "POST",
+          "path": "/api/search"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "materials_rag_ask",
+        "description": "基于材料科学知识库回答一个问题，返回带证据引用的答案。适合需要完整结论的场景。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "要回答的问题"
+            },
+            "top_k": {
+              "type": "integer",
+              "description": "参考的证据条数，默认 6",
+              "default": 6
+            },
+            "document_ids": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "可选，限定文献范围"
+            },
+            "temperature": {
+              "type": "number",
+              "description": "可选，生成温度；留空用服务端默认 0.2"
+            },
+            "max_tokens": {
+              "type": "integer",
+              "description": "可选，生成上限"
+            }
+          },
+          "required": ["question"]
+        },
+        "endpoint": {
+          "method": "POST",
+          "path": "/api/ask"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "materials_rag_add_text",
+        "description": "把一段文本（例如实验记录、论文摘要、工艺规范）写入知识库，供后续检索问答。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string", "description": "文献标题" },
+            "content": { "type": "string", "description": "正文内容" },
+            "source": { "type": "string", "description": "来源说明，如『内部实验记录 2026-10』" },
+            "tags": {
+              "type": "string",
+              "description": "逗号分隔的标签，如『铝合金,热处理』"
+            }
+          },
+          "required": ["title", "content"]
+        },
+        "endpoint": {
+          "method": "POST",
+          "path": "/api/documents/text"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "materials_rag_list_documents",
+        "description": "列出知识库中的文献及其处理状态，用于确认某篇资料是否已入库并完成索引。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "q": { "type": "string", "description": "按标题/来源模糊搜索" },
+            "status": {
+              "type": "string",
+              "description": "按状态过滤：queued/parsing/chunking/embedding/ready/failed"
+            },
+            "limit": { "type": "integer", "default": 100 }
+          },
+          "required": []
+        },
+        "endpoint": {
+          "method": "GET",
+          "path": "/api/documents"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "materials_rag_get_evidence",
+        "description": "按 chunk_id 取某个证据块的原文、所属章节路径与前后相邻块，用于核查引用是否成立。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "chunk_id": {
+              "type": "string",
+              "description": "证据块 id，形如 chk_doc_xxx_0001_0000"
+            }
+          },
+          "required": ["chunk_id"]
+        },
+        "endpoint": {
+          "method": "GET",
+          "path": "/api/chunks/{chunk_id}"
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "materials_rag_status",
+        "description": "查询插件服务能力（LLM 是否接入、嵌入提供者、OCR 是否可用）与知识库规模。建议在会话开始时调用一次。",
+        "parameters": { "type": "object", "properties": {}, "required": [] },
+        "endpoint": {
+          "method": "GET",
+          "path": "/api/meta"
+        }
+      }
+    }
+  ]
+}

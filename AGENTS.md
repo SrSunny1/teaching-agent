@@ -18,17 +18,16 @@
 
 | 编号 | 模块名 | 任务书 | 负责人 |
 |---|---|---|---|
-| 1 | 模块 1（待定） | `frontend/src/features/module1/AGENTS.md` | A |
+| 1 | **课程图谱**（知识图谱 + 问题图谱） | `frontend/src/features/module1/AGENTS.md` | **SrSunny1** |
 | 2 | **知识库** | `frontend/src/features/module2/AGENTS.md` | **周星宇** |
 | 3 | **材料科学错题集** | `frontend/src/features/mistakeBook/AGENTS.md` | **周星宇（B）** |
 | 4 | **金相组织辨析** | `frontend/src/features/module4/AGENTS.md` | B |
 | **7** | **3D 可视化** | `frontend/src/features/visual3d/AGENTS.md` | **SrSunny1** |
 | **8** | **费曼追问** | `frontend/src/features/feynman/AGENTS.md` | **SrSunny1** |
 
-> 📌 **mistakeBook / module2（知识库）/ visual3d / feynman / module4 已定名**，模块 1 仍是编号占位。
+> 📌 **module1（课程图谱）/ module2（知识库）/ mistakeBook / visual3d / feynman / module4 均已定名**，不再有编号占位。
 > 原模块 3 已由「材料科学错题集」取代；原模块 5、6 已删除；`pageDemo` 已移到
 > `frontend/src/reference/pageDemo/`，不再注册到左栏。
-> 模块 1 定名之后，改三处：各任务书的「模块名」行、`CODEOWNERS` 的路径、本表。
 > 用 `python scripts/module.py list` 随时核对当前状态。
 
 > ⚠️ **`CODEOWNERS` 是给 GitHub 用的**（决定谁的 PR 该找谁 review），
@@ -99,7 +98,7 @@ export default {
 
 | artifactType | 模块 | 数据形状 |
 |---|---|---|
-| `module1` | 模块 1（名字待定） | 【待填 —— 在该模块任务书的「数据形状」一节写】 |
+| `module1` | 课程图谱 | `{mode: 'knowledge'\|'question', focus, nodes:[{id,label,level,sector,parent,type,desc,refs}], edges:[{source,target,relation}], questionNodes:[{id,label,tier,type,desc,knowledgeIds,refs}], questionEdges}` |
 | `module2` | 知识库 | 画布预览用元信息；整页由原 RAG 系统提供 |
 | `mistakeBook` | 材料科学错题集 | 见 `frontend/src/features/mistakeBook/AGENTS.md` |
 | `module4` | 金相组织辨析 | 见 `frontend/src/features/module4/` 的 `caseId` 等字段 |

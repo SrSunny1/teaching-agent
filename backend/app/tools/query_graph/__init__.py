@@ -121,33 +121,51 @@ async def _run(args: dict) -> ToolResult:
     nodes, edges, q_nodes, q_edges = _load()
 
     if mode == "question":
-        payload = {"mode": "question", "nodes": q_nodes, "edges": q_edges, "focus": focus}
+        matched_q = None
+        if focus:
+            matched_q = next(
+                (q for q in q_nodes if q["id"] == focus or focus in q["label"] or focus in q.get("desc", "")),
+                None,
+            )
+        focus_id = matched_q["id"] if matched_q else focus
+        payload = {"mode": "question", "nodes": q_nodes, "edges": q_edges, "focus": focus_id}
         detail = (
             f"问题图谱：{len(q_nodes)} 个问题节点，{len(q_edges)} 条依赖关系。\n"
             "边表示问题之间的前置依赖 / 因果 / 对比关系，学生可以从任一问题回溯其依赖的知识点。\n\n"
             + "\n".join(f"- {n['label']}" for n in q_nodes)
         )
         return ToolResult(summary=f"问题图谱 · {len(q_nodes)} 个问题", detail=detail,
-                          artifact_type="graph", artifact=payload)
+                          artifact_type="module1", artifact=payload)
 
+    matched_n = None
     if focus:
+        matched_n = next(
+            (n for n in nodes if n["id"] == focus or focus in n["label"] or focus in n.get("desc", "")),
+            None,
+        )
+    focus_id = matched_n["id"] if matched_n else focus
+
+    if focus_id:
         related = [
-            e for e in edges if e["source"] == focus or e["target"] == focus
+            e for e in edges if e["source"] == focus_id or e["target"] == focus_id
         ]
-        label = next((n["label"] for n in nodes if n["id"] == focus), focus)
+        label = next((n["label"] for n in nodes if n["id"] == focus_id), focus_id)
         detail = f"聚焦「{label}」，关联 {len(related)} 条关系。"
     else:
+        def _tag(n: dict) -> str:
+            return n.get("type") or f"L{n.get('level', '?')}"
+
         detail = (
             f"知识图谱：{len(nodes)} 个概念节点，{len(edges)} 条关系。\n"
-            "主干链：成分 → 相组成 → 组织形态 → 性能 → 可调控工艺（《教材》实验四）。\n\n"
-            + "\n".join(f"- [{n['type']}] {n['label']}" for n in nodes)
+            "主干链：微观结构 → 结晶与凝固 / 相变 → 性质（相与组织）→ 制备与热处理工艺 → 材料性能（《材料物理专业实验1/2》讲义与《教材》）。\n\n"
+            + "\n".join(f"- [{_tag(n)}] {n['label']}" for n in nodes)
         )
 
-    payload = {"mode": "knowledge", "nodes": nodes, "edges": edges, "focus": focus}
+    payload = {"mode": "knowledge", "nodes": nodes, "edges": edges, "focus": focus_id}
     return ToolResult(
         summary=f"知识图谱 · {len(nodes)} 节点 / {len(edges)} 关系",
         detail=detail,
-        artifact_type="graph",
+        artifact_type="module1",
         artifact=payload,
     )
 
@@ -156,8 +174,10 @@ TOOL = Tool(
     name="query_graph",
     label="查询图谱 · {mode}",
     description=(
-        "查询知识图谱或问题图谱。知识图谱的主干是「成分 → 相组成 → 组织形态 → 性能 → 可调控工艺」；"
-        "问题图谱把知识点重组为问题链。学生问概念之间的关系、想梳理知识结构时调用。"
+        "查询课程知识图谱（mode='knowledge'）或三层级问题图谱（mode='question'），并在画布/图谱工作台中高亮聚焦。"
+        "知识图谱覆盖《材料物理专业实验1/2》五级知识点网络（微观结构、结晶与凝固、相变、性质、工艺、性能）；"
+        "问题图谱按第一层级（基础理解）→ 第二层级（实验表征）→ 第三层级（综合应用与工艺设计）组织问题链。"
+        "学生询问知识点联系、梳理知识体系、或查看问题链时必须调用。"
     ),
     parameters={
         "type": "object",
@@ -167,7 +187,7 @@ TOOL = Tool(
                 "enum": ["knowledge", "question"],
                 "description": "knowledge 知识图谱；question 问题图谱",
             },
-            "focus": {"type": "string", "description": "可选，聚焦到某个节点 id"},
+            "focus": {"type": "string", "description": "可选，聚焦的知识点名称、问题关键词或节点 id（如 '金相样品的制备'、'回火'、'表面硬度'）"},
         },
         "required": ["mode"],
     },

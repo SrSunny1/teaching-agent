@@ -1,18 +1,27 @@
 """FastAPI entry point, including authenticated student records and chat."""
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends
 from .auth import router as auth_router, student
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from . import config
+from . import config, rag_autostart
 from .chat import run_chat
 from .events import encode
 from .tools import TOOLS
 
-app = FastAPI(title="材料物理实验教学 Agent", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # 知识库 RAG 服务随教学 Agent 一起起来（已在跑则跳过），评委无需手动启动
+    rag_autostart.ensure_started()
+    yield
+
+
+app = FastAPI(title="材料物理实验教学 Agent", version="0.1.0", lifespan=lifespan)
 app.include_router(auth_router)
 
 # 竞赛演示用，放开 CORS。生产环境应收紧。

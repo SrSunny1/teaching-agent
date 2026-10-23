@@ -120,6 +120,9 @@ export default function Component({ artifact, onSendMessage }: FeatureProps) {
   const answered = rounds.filter((round) => round.userAnswer).length
   // 分数只可能在后端判定满三轮后才下发，所以「有没有分」就是完成与否的权威信号
   const complete = typeof data?.score === 'number'
+  const latestAnsweredIndex = rounds.reduce(
+    (latest, round, index) => round.userAnswer ? index : latest, -1,
+  )
   const [selected, setSelected] = useState<{ round: number; seg: number } | null>(null)
 
   // 画布是整块替换的，新产物到达时旧的分段下标可能已经失效 —— 清掉选中态
@@ -130,11 +133,7 @@ export default function Component({ artifact, onSendMessage }: FeatureProps) {
   return (
     <div className="feat" style={{ overflowY: 'auto' }}>
       <h3>费曼追问</h3>
-      <div className="sub" style={{ marginBottom: 14 }}>
-        用自己的话讲清一个概念，逐轮检查表述和推理
-      </div>
-
-      <details style={{ marginBottom: 14 }}>
+      {!data && <details style={{ marginBottom: 14 }}>
         <summary style={{ cursor: 'pointer', color: 'var(--accent)', fontSize: 'var(--fs-sm)', padding: '4px 0' }}>
           没有思路？从这些课程概念开始（{concepts.length} 条）
         </summary>
@@ -158,7 +157,7 @@ export default function Component({ artifact, onSendMessage }: FeatureProps) {
             </article>
           ))}
         </div>
-      </details>
+      </details>}
 
       {!data && (
         <div className="box">
@@ -196,53 +195,65 @@ export default function Component({ artifact, onSendMessage }: FeatureProps) {
             </div>
           )}
 
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
             {rounds.map((round, index) => {
               const picked = selected?.round === index ? (round.annotated ?? [])[selected.seg] : undefined
               const pickedStyle = picked && isMark(picked.kind) ? MARK_STYLE[picked.kind] : null
               // 学生直接以「我来讲讲…」开场时，第 1 轮记录的是他的开场自述而非对某个追问的回答
               const isOpening = index === 0 && /开场|自述|初始讲解/.test(round.question)
               return (
-                <section className="box" key={`${index}-${round.question}`}>
-                  {isOpening ? (
-                    <div className="sub" style={{ marginBottom: 4 }}>第 1 轮 · 你的开场讲解</div>
-                  ) : (
-                    <>
-                      <div className="sub" style={{ marginBottom: 6 }}>第 {index + 1} 轮 · Agent 追问</div>
-                      <div style={{ lineHeight: 1.55 }}>{round.question}</div>
-                      <div style={{ marginTop: 12, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>你的回答</div>
-                    </>
-                  )}
-                  <AnnotatedAnswer
-                    round={round}
-                    roundIndex={index}
-                    selected={selected}
-                    onSelect={setSelected}
-                  />
+                <details
+                  className="box"
+                  key={`${index}-${round.question}-${latestAnsweredIndex}-${complete}`}
+                  open={!complete && (index === latestAnsweredIndex || index === rounds.length - 1)}
+                  style={{
+                    textAlign: 'left',
+                    minWidth: 0,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  <summary style={{ cursor: 'pointer', fontWeight: 600, lineHeight: 1.6, color: 'var(--text)' }}>
+                    第 {index + 1} 轮 · {isOpening ? '你的开场讲解' : 'Agent 追问'}
+                  </summary>
+                  <div style={{ marginTop: 8, color: 'var(--text)' }}>
+                    {!isOpening && (
+                      <>
+                        <div style={{ lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{round.question}</div>
+                        <div style={{ marginTop: 12, fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>你的回答</div>
+                      </>
+                    )}
+                    <AnnotatedAnswer
+                      round={round}
+                      roundIndex={index}
+                      selected={selected}
+                      onSelect={setSelected}
+                    />
 
-                  {picked && pickedStyle && (
-                    <div style={{
-                      marginTop: 9,
-                      padding: '8px 10px',
-                      border: '1px solid var(--border-soft)',
-                      borderLeft: `3px solid ${pickedStyle.line}`,
-                      borderRadius: 'var(--r-sm)',
-                      background: 'var(--bg-elevated)',
-                    }}>
-                      <div style={{ fontSize: 'var(--fs-xs)', fontWeight: 650, color: pickedStyle.line, marginBottom: 3 }}>
-                        {MARK_LABEL[picked.kind as MarkKind]} · 「{picked.text}」
+                    {picked && pickedStyle && (
+                      <div style={{
+                        marginTop: 9,
+                        padding: '8px 10px',
+                        border: '1px solid var(--border-soft)',
+                        borderLeft: `3px solid ${pickedStyle.line}`,
+                        borderRadius: 'var(--r-sm)',
+                        background: 'var(--bg-elevated)',
+                      }}>
+                        <div style={{ fontSize: 'var(--fs-xs)', fontWeight: 650, color: pickedStyle.line, marginBottom: 3 }}>
+                          {MARK_LABEL[picked.kind as MarkKind]}
+                        </div>
+                        <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>{picked.note}</div>
                       </div>
-                      <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>{picked.note}</div>
-                    </div>
-                  )}
+                    )}
 
-                  {round.critique && (
-                    <div style={{ marginTop: 10, paddingTop: 9, borderTop: '1px solid var(--border-soft)' }}>
-                      <div className="sub" style={{ marginBottom: 4 }}>点评</div>
-                      <div style={{ lineHeight: 1.55 }}>{round.critique}</div>
-                    </div>
-                  )}
-                </section>
+                    {round.critique && (
+                      <details style={{ marginTop: 10, paddingTop: 9, borderTop: '1px solid var(--border-soft)' }}>
+                        <summary className="sub" style={{ cursor: 'pointer', marginBottom: 4 }}>本轮点评</summary>
+                        <div style={{ lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{round.critique}</div>
+                      </details>
+                    )}
+                  </div>
+                </details>
               )
             })}
           </div>

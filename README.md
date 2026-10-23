@@ -47,10 +47,12 @@ setup.bat
 start.bat
 ```
 
-会开三个窗口（后端 / 前端 / 知识库 RAG 服务）并自动打开浏览器。关掉窗口就是停服务。
+会开两个窗口（后端 / 前端）并自动打开浏览器。关掉窗口就是停服务。
+知识库 RAG 服务由后端启动时自动拉起（见下），不再单独开窗口。
 
-> 「知识库RAG」模块依赖仓库内置的 `材料科学RAG系统/`（默认 http://127.0.0.1:8765）。
-> `start.ps1` 会自动拉起它；也可以单独双击 `材料科学RAG系统/启动.bat`。
+> 「知识库RAG」模块依赖仓库内置的 `rag-system/`（默认 http://127.0.0.1:8765）。
+> 后端启动时会自动拉起它（`backend/app/rag_autostart.py`，已在运行则跳过），
+> 也可以单独双击 `rag-system/启动.bat`。
 
 **Linux / macOS，或想自己控制：**
 
@@ -61,8 +63,8 @@ cd backend && WATCHFILES_FORCE_POLLING=true uvicorn app.main:app --reload --port
 # 终端 2 —— 前端
 cd frontend && npm run dev
 
-# 终端 3 —— 知识库 RAG 服务（可选，不启动时「知识库RAG」页显示引导卡片）
-cd 材料科学RAG系统 && python start.py --no-browser
+# 终端 3 —— 知识库 RAG 服务（可选：后端启动时会自动拉起；这里只用于单独调试）
+cd rag-system && python start.py --no-browser
 ```
 
 > `WATCHFILES_FORCE_POLLING=true` 是**项目在 WSL 挂载盘（`/mnt/...`）上时必须的** ——
@@ -138,12 +140,12 @@ cd backend && python tests/retrieval_probe.py
 
 左栏顺序由各 `index.ts` 的 `order` 字段控制。
 
-**当前 7 个模块：** `module1` 仍是编号占位；`module2`（知识库）、`mistakeBook`、`module4`、`visual3d`、`feynman` 已定名。
+**当前 6 个模块：** 全部已定名 —— `module1`（课程图谱）、`module2`（知识库）、`mistakeBook`、`module4`、`visual3d`、`feynman`。
 （原模块 3 已由「材料科学错题集」取代；原模块 5、6 已删除；`pageDemo` 已移到 `src/reference/pageDemo/`，不再注册到左栏。）
 
 | # | 模块 | artifactType | 前端 | 负责人 |
 |---|---|---|---|---|
-| 1 | 模块 1（名字待定） | `module1` | `features/module1/` | A |
+| 1 | **课程图谱**（知识图谱 + 问题图谱） | `module1` | `features/module1/` | **SrSunny1** |
 | 2 | **知识库** | `module2` | `features/module2/` | 周星宇 |
 | 3 | **材料科学错题集** | `mistakeBook` | `features/mistakeBook/` | 周星宇（B） |
 | 4 | **金相组织辨析** | `module4` | `features/module4/` | B |
@@ -258,7 +260,7 @@ export default {
 | `mistakeBook` | 材料科学错题集 | 见 `frontend/src/features/mistakeBook/AGENTS.md` |
 | `module4` | 金相组织辨析 | 见 `frontend/src/features/module4/` 的 `caseId` 等字段 |
 | `module2` | 知识库 | 画布预览用元信息；整页由原 RAG 系统提供 |
-| `module1` | 模块 1（名字待定） | 【待填 —— 在各任务书的「数据形状」一节写】 |
+| `module1` | 课程图谱 | `{mode, focus, nodes:[{id,label,level,sector,parent,type,desc,refs}], edges:[{source,target,relation}], questionNodes:[{id,label,tier,type,desc,knowledgeIds,refs}], questionEdges}` |
 
 ### SSE 事件（只有 7 种，不许私自加第 8 种）
 
