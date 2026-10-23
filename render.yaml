@@ -1,0 +1,13 @@
+# Render Blueprint —— 一键声明式部署
+# 用法：Render Dashboard → New → Blueprint → 选本仓库 → 填 DEEPSEEK_API_KEY → Apply
+services:
+  - type: web
+    name: materials-lab-agent
+    runtime: docker          # 用根目录的 Dockerfile 构建
+    plan: free               # 免费档（750 小时/月，15 分钟无访问自动休眠）
+    healthCheckPath: /health # 部署后 Render 用它判定服务就绪
+    envVars:
+      - key: DEEPSEEK_API_KEY # 你的大模型 Key，部署时在页面上填，不进仓库
+        sync: false
+      - key: MODEL
+        value: deepseek-flash # 与 backend/app/config.py 的兜底默认一致
