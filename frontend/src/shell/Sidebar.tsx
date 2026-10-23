@@ -5,6 +5,8 @@ import type { ConvMeta } from '../lib/history'
 import { IconChat } from './icons'
 
 interface Props {
+  onOpenReport: () => void
+  reportBusy: boolean
   collapsed: boolean
   features: FeatureModule[]
   /** 当前激活的模块空间（= 模块 id 或 __global__） */
@@ -31,6 +33,8 @@ interface CtxMenu {
 }
 
 export default function Sidebar({
+  onOpenReport,
+  reportBusy,
   collapsed,
   features,
   activeModuleKey,
@@ -148,6 +152,10 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-scroll">
+        <div className="sidebar-section">学习反馈</div>
+        <button className="nav-item" disabled={reportBusy} onClick={onOpenReport} style={{ color: 'var(--accent)' }}>
+          <span className="label">学习评价报告</span>
+        </button>
         {/* ── 对话（每条互不干扰） ── */}
         <div className="sidebar-section">对话</div>
         <button

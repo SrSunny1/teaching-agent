@@ -162,6 +162,14 @@ cd backend && python tests/retrieval_probe.py
 
 ## 三、契约（Agent ↔ 壳 的唯一接口）
 
+### 本地学习评价报告
+
+主区“学习评价报告”允许选择会话并确认归属，生成四部分报告及 Markdown 导出。
+`Message.responseMode` 是前端本地持久化标记（live/mock/local），不改变后端 SSE 协议。
+报告只整理来源为 live、工具成功、学生原话匹配的费曼点评，累计轮次去重；
+旧记录、模拟数据、未完成回复及没有作答的提问不用于能力判断。
+独立练习与错题库尚未纳入，不作综合分数或正式成绩认定；报告只在本机生成。
+
 模块可选声明 `answerFromSources(query, offline)`，返回 `{ content, summary }` 或 `null`。
 壳按当前对话所属模块（不是画布）调用；返回结果作为本地资料回答显示，并明确标记非模型调用。
 `null` 保留原有后端/演示路由；没有声明此接口的模块行为不变。不新增后端 SSE 事件。

@@ -22,6 +22,8 @@ export interface ToolCall {
 }
 
 export interface Message {
+  /** Evaluation provenance; legacy messages without it are not graded. */
+  responseMode?: 'live' | 'mock' | 'local'
   id: string
   role: Role
   /** 正文（Markdown） */

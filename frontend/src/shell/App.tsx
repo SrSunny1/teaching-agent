@@ -29,6 +29,7 @@ import ChatStream from './ChatStream'
 import Composer from './Composer'
 import ArtifactPanel from './ArtifactPanel'
 import StatusBar from './StatusBar'
+import LearningReportDialog from './LearningReportDialog'
 
 const uid = () => `m_${crypto.randomUUID()}`
 
@@ -149,6 +150,7 @@ export default function App() {
    *   当前在哪个模块空间由 activeConvKey 纯函数推出：moduleKeyOf(activeConvKey)。
    */
   const [initial] = useState(loadStore)
+  const [reportOpen, setReportOpen] = useState(false)
   const [conversations, setConversations] = useState<Record<string, Message[]>>(initial.conversations)
   const [metas, setMetas] = useState<ConvMeta[]>(initial.metas)
   const [currentConv, setCurrentConv] = useState<Record<string, string>>(initial.currentConv)
@@ -364,7 +366,7 @@ export default function App() {
         ...(conversations[convKey] ?? []),
         { id: userId, role: 'user', content: q, image },
       ]
-      setConv(convKey, () => [...history, { id: asstId, role: 'assistant', content: '', streaming: true }])
+      setConv(convKey, () => [...history, { id: asstId, role: 'assistant', content: '', streaming: true, responseMode: connection === 'live' ? 'live' : 'mock' }])
       setBusy(true)
       setStats({})
 
@@ -452,6 +454,7 @@ export default function App() {
       try {
         const local = mod?.answerFromSources?.(q, connection === 'mock')
         if (local) {
+          setConv(convKey, p => patchMsg(p, asstId, m => ({ ...m, responseMode: 'local' })))
           const lookupId = uid()
           onEvent({ type: 'tool_call', id: lookupId, name: 'local_source_lookup', label: '本地资料检索（非模型调用）', args: { query: q } })
           onEvent({ type: 'tool_result', id: lookupId, summary: local.summary, detail: local.content })
@@ -603,6 +606,8 @@ export default function App() {
       style={{ '--artifact-w': `${panelWidth}px`, position: 'relative' } as CSSProperties}
     >
       <Sidebar
+        onOpenReport={() => setReportOpen(true)}
+        reportBusy={busy}
         collapsed={!sidebarOpen}
         features={features}
         activeModuleKey={activeModuleKey}
@@ -616,7 +621,12 @@ export default function App() {
         connection={connection}
       />
 
+      {reportOpen && <LearningReportDialog currentId={activeConvKey} onClose={() => setReportOpen(false)}
+        conversations={metas.map(m => ({ id: m.id, title: m.title, messages: conversations[m.id] ?? [] }))} />}
       <div className="main">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 16px', borderBottom: '1px solid var(--border-soft)' }}>
+          <button className="chip" disabled={busy} onClick={() => setReportOpen(true)}>学习评价报告</button>
+        </div>
         {PageComp ? (
           /* ★ 整页模式：模块接管主区。它拿得到 artifact / onSendMessage / onEmitArtifact，
              所以照样能驱动 Agent —— 只是界面完全由它自己决定。 */
