@@ -1,0 +1,17 @@
+.git
+.gitignore
+**/node_modules
+frontend/dist
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+backend/.venv
+backend/private
+rag-system/.venv
+rag-system/data/logs
+材料科学RAG系统/
+*.log
+.DS_Store
+Dockerfile
+.dockerignore

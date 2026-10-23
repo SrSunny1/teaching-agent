@@ -25,3 +25,4 @@ rag-system/data/tmp/
 rag-system/data/*.db-wal
 rag-system/data/*.db-shm
 rag-system/data/ppsv3_env.json
+backend/frontend_dist/

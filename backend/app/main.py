@@ -1,12 +1,16 @@
 """FastAPI entry point, including authenticated student records and chat."""
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Depends
+import httpx
+from fastapi import FastAPI, Depends, HTTPException, Request
 from .auth import router as auth_router, student
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import config, rag_autostart
@@ -31,6 +35,61 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def strip_api_prefix(request: Request, call_next):
+    """前端统一以 /api/* 调后端。本地开发由 vite proxy 剥掉前缀；
+    单容器部署时没有 vite，由本层完成同样的剥离。"""
+    if request.url.path.startswith("/api/"):
+        request.scope["path"] = request.url.path[4:]
+    return await call_next(request)
+
+
+# ── /rag/* 反代：单容器部署时把 RAG 后台挂到同一域名下 ──────────────
+RAG_BASE = os.environ.get("MSRAG_BASE_URL", "http://127.0.0.1:8765")
+_HOP_BY_HOP = {"host", "connection", "content-length", "transfer-encoding", "keep-alive", "upgrade"}
+
+
+@app.get("/rag", include_in_schema=False)
+async def rag_index():
+    return RedirectResponse("/rag/")
+
+
+@app.api_route("/rag/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)
+async def rag_proxy(request: Request, path: str):
+    """反向代理到容器内 127.0.0.1:8765 的 RAG 服务。
+
+    原系统前端用 API='' 同源请求；网关层对 app.js 做一次内容改写，
+    把 API 前缀指回 /rag，整个 RAG 后台即可挂在 /rag/ 下工作，
+    不改原系统一行代码。
+    """
+    body = await request.body()
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in _HOP_BY_HOP}
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            upstream = await client.request(
+                request.method,
+                f"{RAG_BASE}/{path}",
+                params=request.query_params,
+                content=body,
+                headers=headers,
+            )
+    except httpx.HTTPError:
+        raise HTTPException(502, "知识库服务正在启动，请稍后重试")
+    content = upstream.content
+    if path.endswith("app.js") and "javascript" in upstream.headers.get("content-type", ""):
+        content = content.replace(b"API = ''", b"API = '/rag'")
+    resp_headers = {
+        k: v for k, v in upstream.headers.items()
+        if k.lower() not in _HOP_BY_HOP | {"content-encoding"}
+    }
+    return Response(content=content, status_code=upstream.status_code, headers=resp_headers)
+
+
+# 前端构建产物（Docker 镜像把 frontend/dist 拷成 backend/frontend_dist）。
+# 存在则整站同源托管；本地开发时不存在，/ 仍返回 API 说明 JSON。
+FRONT_DIST = Path(__file__).resolve().parents[1] / "frontend_dist"
 
 
 class ChatMessage(BaseModel):
@@ -63,12 +122,12 @@ class ChatRequest(BaseModel):
 
 
 @app.get("/")
-async def root() -> dict:
-    """根路径说明。
-
-    后端是 API 服务，本身没有页面 —— 直接打开 :8000 只会看到一句 Not Found，
-    容易让人以为项目坏了。这里明确告诉访问者界面在哪。
-    """
+async def root():
+    """根路径。单容器部署时返回前端 index.html；
+    本地开发（无构建产物）时返回 API 说明，避免误把 :8000 当界面。"""
+    index = FRONT_DIST / "index.html"
+    if index.exists():
+        return FileResponse(index)
     return {
         "service": "材料物理实验教学 Agent · 后端 API",
         "notice": "这是后端 API，不是界面。",
@@ -115,3 +174,8 @@ async def chat(req: ChatRequest, who: str = Depends(student)) -> StreamingRespon
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ── 前端静态文件挂载：放最后，显式路由（/api、/rag、/health…）优先 ──
+if FRONT_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=FRONT_DIST, html=True), name="frontend")

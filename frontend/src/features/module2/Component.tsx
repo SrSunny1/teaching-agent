@@ -180,8 +180,11 @@ function resolveBaseUrl(artifactUrl?: string): string {
   } catch {
     /* ignore */
   }
-  if (typeof window !== 'undefined' && window.location?.hostname) {
-    return `http://${window.location.hostname}:8765`
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    // 本地开发：原系统直接开在 :8765；单容器部署：/rag/ 由后端反代到容器内服务
+    return import.meta.env.DEV
+      ? `http://${window.location.hostname}:8765`
+      : `${window.location.origin}/rag/`
   }
   return artifactUrl || 'http://127.0.0.1:8765'
 }
