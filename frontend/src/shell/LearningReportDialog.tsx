@@ -21,7 +21,7 @@ export default function LearningReportDialog({ conversations, currentId, onClose
   return createPortal(<dialog ref={dialog} onCancel={onClose} aria-labelledby="learning-report-title"
     style={{ width: 'min(760px, calc(100vw - 32px))', maxHeight: '85vh', boxSizing: 'border-box', overflowY: 'auto', background: 'var(--bg-elevated)', color: 'var(--text)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: 24, overflowWrap: 'anywhere' }}>
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-      <h2 id="learning-report-title" style={{ fontSize: 20, margin: 0 }}>学习评价报告</h2>
+      <h2 id="learning-report-title" style={{ fontSize: 20, margin: 0 }}>个人学习评价报告</h2>
       <button className="chip" onClick={onClose}>关闭</button>
     </header>
     <p className="sub">评价范围：所选会话中的作答与费曼点评。仅在本机整理，不上传记录。</p>
@@ -39,6 +39,17 @@ export default function LearningReportDialog({ conversations, currentId, onClose
     </div>
     {report && <article aria-live="polite" style={{ borderTop: '1px solid var(--border-soft)', lineHeight: 1.8 }}>
       <h3>整体学习情况</h3><p>{report.overview}</p>
+      <section aria-label="个人学习赋分">
+        <h3>已评价知识点参考分</h3>
+        <p style={{ fontSize: 28, fontWeight: 700, margin: '8px 0' }}>{report.referenceScore === null ? '暂无法评分' : `${report.referenceScore} / 100`}</p>
+        <p>{report.referenceScore === null ? '需要同一知识点至少三条不同的有效作答、逐轮点评和已有模型总评。未评价不计为零分。' : `覆盖 ${new Set(report.assessments.map(a => a.topic)).size} 个知识点；同一知识点先取会话评分均值，再对知识点等权平均并四舍五入。不是整门课程的综合能力分。`}</p>
+        {report.assessments.map((a, i) => <details key={i} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-soft)' }}>
+          <summary>{a.topic}：{a.score} / 100 · {a.source}</summary>
+          <p>{a.reason}</p><strong>评分对应作答</strong>
+          <ol>{a.answers.map((answer, index) => <li key={index}>{answer}</li>)}</ol>
+        </details>)}
+        <p className="sub">分数来自已有费曼模型总评，不根据聊天次数或正向标注比例计算。知识理解、分析应用、表达推理尚无独立量表数据，不拆分赋分；未覆盖知识点与实际操作能力未评价。</p>
+      </section>
       {([['表现较好的知识点', report.strengths], ['需要加强的具体问题', report.weaknesses]] as const).map(([title, items]) => <section key={title}>
         <h3>{title}</h3>{!items.length ? <p>证据不足，暂不判断；不代表已经全部掌握。</p> : items.map((f, i) => <div key={i} style={{ borderBottom: '1px solid var(--border-soft)', padding: '8px 0' }}>
           <strong>{f.topic}</strong><p>{f.comment}</p><blockquote>作答：“{f.evidence}”</blockquote><small>来源会话：{f.source} · 已有自动点评</small>
