@@ -13,7 +13,7 @@ export default function AuthGate() {
   const [apiKeyOpen, setApiKeyOpen] = useState(false)
   const [chatBusy, setChatBusy] = useState(false)
   useEffect(() => {
-    restoreSession().then(id => { if (id) setUser(id) })
+    restoreSession().then(id => { if (id) { setUser(id); if (!apiKey()) setApiKeyOpen(true) } })
   }, [])
   useEffect(() => {
     const listener = (e: Event) => setSync((e as CustomEvent<string>).detail)
@@ -59,8 +59,8 @@ export default function AuthGate() {
       setApiKey(String(fields.get('apiKey') ?? '')); setApiKeyOpen(false)
       setError('API Key 已保存（仅本浏览器，刷新生效）')
     }}>
-      <label style={field}>DeepSeek API Key<input style={input} name="apiKey" type="password" defaultValue={apiKey()} autoComplete="off" maxLength={200} placeholder="sk-..." /></label>
-      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>去 platform.deepseek.com 申请后粘贴到这里，只保存在本浏览器；留空则使用服务器默认 Key。</p>
+      <label style={field}>DeepSeek API Key<input style={input} name="apiKey" type="password" defaultValue={apiKey()} autoComplete="off" maxLength={200} placeholder="sk-..." autoFocus /></label>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>去 platform.deepseek.com 申请后粘贴到这里，只保存在本浏览器；留空则使用服务器默认 Key，直接关闭即可跳过。</p>
       <button className="chip">保存</button>
     </form>}
     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -80,6 +80,7 @@ export default function AuthGate() {
           await accountRequest('register', { studentId: id, password }).catch(() => null)
         }
         await signIn(id, password); setUser(studentId); setSync('已保存')
+        if (!apiKey()) setApiKeyOpen(true)  // 登录/注册成功后弹出 API Key 填写，填过则不打扰
       } catch (err) { setError(err instanceof Error ? err.message : '连接失败，请确认后端已启动') } finally { setBusy(false) }
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
