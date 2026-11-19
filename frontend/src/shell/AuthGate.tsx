@@ -11,9 +11,10 @@ export default function AuthGate() {
   const [sync, setSync] = useState('已保存')
   const [changePassword, setChangePassword] = useState(false)
   const [apiKeyOpen, setApiKeyOpen] = useState(false)
+  const [keyReady, setKeyReady] = useState(() => Boolean(apiKey()))
   const [chatBusy, setChatBusy] = useState(false)
   useEffect(() => {
-    restoreSession().then(id => { if (id) { setUser(id); if (!apiKey()) setApiKeyOpen(true) } })
+    restoreSession().then(id => { if (id) setUser(id) })
   }, [])
   useEffect(() => {
     const listener = (e: Event) => setSync((e as CustomEvent<string>).detail)
@@ -31,6 +32,27 @@ export default function AuthGate() {
   }
   const field = { display: 'grid', gap: 6, margin: '14px 0' }
   const input = { padding: 10, width: '100%', boxSizing: 'border-box' as const, background: 'var(--bg-input)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6 }
+  if (user && !keyReady) return <main className="auth-page" data-theme="light">
+    <img className="auth-background" src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=2200&q=85" alt="" referrerPolicy="no-referrer" />
+    <header className="auth-brand"><img className="auth-brand-mark" src="/agent-logo.png" alt="" /><span>材料物理实验<span className="auth-brand-sub">教学 Agent</span></span></header>
+    <form className="auth-form" onSubmit={e => {
+      e.preventDefault(); const fields = new FormData(e.currentTarget)
+      const key = String(fields.get('apiKey') ?? '').trim()
+      if (!key) { setError('必须填入 API Key 才能进入'); return }
+      setApiKey(key); setKeyReady(true); setError('')
+    }}>
+      <div className="auth-eyebrow">ONE MORE STEP</div>
+      <h1>还差一步：填入 API Key</h1>
+      <p className="auth-intro">已登录为 {user}</p>
+      <h2 className="auth-form-title">DeepSeek API Key</h2>
+      <label style={field}>API Key<input style={input} name="apiKey" type="password" autoComplete="off" required maxLength={200} placeholder="sk-..." autoFocus /></label>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>到 platform.deepseek.com 注册申请（新用户有免费额度），粘贴到上方。Key 只保存在本浏览器，不会上传服务器。</p>
+      <p className="auth-error" role="alert">{error}</p>
+      <button className="auth-submit">保存并进入</button>
+      <div className="auth-switch"><span>换个账号？</span><button type="button" disabled={busy} onClick={logout}>退出登录</button></div>
+    </form>
+    <footer className="auth-footer">材料科学 · 实验探索 · 自主学习</footer>
+  </main>
   if (user) return <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
     <header style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '8px 16px', background: 'var(--bg-panel)', borderBottom: '1px solid var(--border-soft)' }}>
       <strong>账号：{user}</strong><span role="status">{sync}</span>
@@ -56,11 +78,12 @@ export default function AuthGate() {
     </form>}
     {apiKeyOpen && <form style={{ padding: 16 }} onSubmit={e => {
       e.preventDefault(); const fields = new FormData(e.currentTarget)
-      setApiKey(String(fields.get('apiKey') ?? '')); setApiKeyOpen(false)
+      const key = String(fields.get('apiKey') ?? '').trim()
+      setApiKey(key); setKeyReady(Boolean(key)); setApiKeyOpen(false)
       setError('API Key 已保存（仅本浏览器，刷新生效）')
     }}>
       <label style={field}>DeepSeek API Key<input style={input} name="apiKey" type="password" defaultValue={apiKey()} autoComplete="off" maxLength={200} placeholder="sk-..." autoFocus /></label>
-      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>去 platform.deepseek.com 申请后粘贴到这里，只保存在本浏览器；留空则使用服务器默认 Key，直接关闭即可跳过。</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>去 platform.deepseek.com 申请后粘贴到这里，只保存在本浏览器；清空保存会被要求重新填写。</p>
       <button className="chip">保存</button>
     </form>}
     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -80,7 +103,6 @@ export default function AuthGate() {
           await accountRequest('register', { studentId: id, password }).catch(() => null)
         }
         await signIn(id, password); setUser(studentId); setSync('已保存')
-        if (!apiKey()) setApiKeyOpen(true)  // 登录/注册成功后弹出 API Key 填写，填过则不打扰
       } catch (err) { setError(err instanceof Error ? err.message : '连接失败，请确认后端已启动') } finally { setBusy(false) }
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
