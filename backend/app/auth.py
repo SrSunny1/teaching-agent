@@ -157,12 +157,6 @@ class Credentials(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
-class Registration(Credentials):
-    # 登录保持 min_length=1：老账号可能是短密码，收紧会把人锁在外面。
-    # 真正的短板在 login 的"不存在即自动建号"，注册处的长度约束只是表态。
-    password: str = Field(min_length=10, max_length=128)
-
-
 def student(authorization: str = Header(default='')):
     if not authorization.startswith('Bearer '):
         raise HTTPException(401, '请先登录')
@@ -186,7 +180,7 @@ def throttle(db, name):
 
 
 @router.post('/register')
-def register(req: Registration):
+def register(req: Credentials):
     name = req.studentId.strip()
     if not name:
         raise HTTPException(400, '账号名不能为空')
@@ -237,7 +231,7 @@ def logout(who=Depends(student), authorization: str = Header(default='')):
 
 class PasswordChange(BaseModel):
     oldPassword: str = Field(min_length=1, max_length=128)
-    newPassword: str = Field(min_length=10, max_length=128)
+    newPassword: str = Field(min_length=1, max_length=128)
 
 
 @router.post('/password')

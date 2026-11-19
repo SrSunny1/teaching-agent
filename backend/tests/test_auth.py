@@ -20,7 +20,7 @@ class AccountsTest(unittest.TestCase):
                 tokens = []
                 for name in ['20260001', '20260002']:
                     payload = dict(studentId=name, password='a-long-password')
-                    self.assertEqual(client.post('/auth/register', json={**payload, 'password': 'short'}).status_code, 422)
+                    self.assertEqual(client.post('/auth/register', json={**payload, 'password': ''}).status_code, 422)
                     self.assertEqual(client.post('/auth/register', json=payload).status_code, 200)
                     self.assertEqual(client.post('/auth/register', json=payload).status_code, 400)
                     result = client.post('/auth/login', json=payload)
