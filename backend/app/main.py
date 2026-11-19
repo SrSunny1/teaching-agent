@@ -43,7 +43,12 @@ async def strip_api_prefix(request: Request, call_next):
     单容器部署时没有 vite，由本层完成同样的剥离。"""
     if request.url.path.startswith("/api/"):
         request.scope["path"] = request.url.path[4:]
-    return await call_next(request)
+    resp = await call_next(request)
+    # index.html / admin 页必须每次校验新版 —— 不带缓存头时浏览器按启发式
+    # 缓存 HTML，部署后用户可能拿到旧前端（assets 带哈希，不受影响）
+    if "text/html" in resp.headers.get("content-type", ""):
+        resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 # ── /rag/* 反代：单容器部署时把 RAG 后台挂到同一域名下 ──────────────
