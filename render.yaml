@@ -9,5 +9,13 @@ services:
     envVars:
       - key: DEEPSEEK_API_KEY # 你的大模型 Key，部署时在页面上填，不进仓库
         sync: false
+      - key: ADMIN_TOKEN      # 管理页 /auth/admin 的口令，部署时在页面上填，不进仓库
+        sync: false
+      - key: DATABASE_URL     # Neon/Supabase 等 Postgres 连接串；填了即启用云端持久化
+        sync: false
+      - key: TURSO_DATABASE_URL  # Turso 库地址（libsql://xxx.turso.io），备选云端存储
+        sync: false
+      - key: TURSO_AUTH_TOKEN    # Turso 访问令牌，配套上一项
+        sync: false
       - key: MODEL
         value: deepseek-flash # 与 backend/app/config.py 的兜底默认一致

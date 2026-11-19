@@ -9,6 +9,8 @@ httpx>=0.27.0
 openai>=1.54.0
 python-multipart>=0.0.12
 python-docx>=1.1.0        # knowledge/ingest.py 读 .docx
+libsql>=0.1.7             # Turso 云数据库；仅设 TURSO_DATABASE_URL 时才加载，本地无感
+psycopg[binary]>=3.1      # Neon/Supabase 等 Postgres；仅设 DATABASE_URL 时才加载
 
 # 向量检索目前还没启用（search_knowledge 是关键词打分）。
 # 要做的时候再装：pip install -r requirements-rag.txt

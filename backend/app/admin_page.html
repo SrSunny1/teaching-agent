@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>后台数据 · 教学 Agent</title>
+<style>
+  :root {
+    --bg: #0e0e10; --panel: #151518; --elevated: #1c1c21;
+    --border: #2a2a31; --border-soft: #212127;
+    --text: #ececf1; --dim: #a9a9b8; --muted: #7b7b8c;
+    --accent: #6b9fff; --ok: #4ade80; --err: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.6 "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; min-height: 100dvh; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+  h1 { font-size: 20px; font-weight: 600; }
+  h1 small { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+  h2 { font-size: 14px; font-weight: 600; color: var(--dim); margin: 28px 0 10px; }
+  button { background: var(--elevated); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #0b1020; font-weight: 600; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 18px; }
+  .card .num { font-size: 30px; font-weight: 700; color: var(--accent); }
+  .card .label { color: var(--muted); font-size: 13px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { background: var(--elevated); border: 1px solid var(--border); border-radius: 999px; padding: 4px 14px; font-family: Consolas, monospace; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  .time { color: var(--muted); white-space: nowrap; font-size: 13px; }
+  .empty { color: var(--muted); padding: 20px; text-align: center; background: var(--panel); border: 1px dashed var(--border); border-radius: 12px; }
+  .gate { max-width: 340px; margin: 15vh auto; background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 28px; }
+  .gate h1 { margin-bottom: 6px; }
+  .gate p { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .gate input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 9px 12px; font: inherit; margin-bottom: 12px; }
+  .gate input:focus { outline: none; border-color: var(--accent); }
+  .err { color: var(--err); font-size: 13px; margin-top: 8px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <form class="gate" id="gate">
+    <h1>后台数据</h1>
+    <p>材料物理实验教学 Agent · 请输入管理口令<br>口令见 <code>backend/private/admin_token.txt</code></p>
+    <input id="tokenInput" type="password" placeholder="管理口令" autocomplete="off" autofocus>
+    <button class="primary" type="submit" style="width:100%">查看数据</button>
+    <div class="err" id="gateErr"></div>
+  </form>
+
+  <div id="main" hidden>
+    <header>
+      <h1>后台数据<small id="updated"></small></h1>
+      <div>
+        <button id="refresh">刷新</button>
+        <button id="quit">退出口令</button>
+      </div>
+    </header>
+    <div class="err" id="err"></div>
+    <div class="cards">
+      <div class="card"><div class="num" id="userCount">–</div><div class="label">注册账号</div></div>
+      <div class="card"><div class="num" id="activeSessions">–</div><div class="label">活跃会话（8h内登录）</div></div>
+      <div class="card"><div class="num" id="recordsCount">–</div><div class="label">已存学习记录</div></div>
+      <div class="card"><div class="num" id="feedbackCount">–</div><div class="label">意见反馈</div></div>
+    </div>
+    <h2>注册账号</h2>
+    <div class="pills" id="users"></div>
+    <h2>意见反馈</h2>
+    <div id="feedbackBox"></div>
+  </div>
+
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let token = new URLSearchParams(location.search).get('token')
+        || sessionStorage.getItem('adminToken') || '';
+let timer = null;
+
+function showGate(msg) {
+  $('main').hidden = true; $('gate').hidden = false;
+  $('gateErr').textContent = msg || '';
+  if (timer) { clearInterval(timer); timer = null; }
+}
+function showMain() {
+  $('gate').hidden = true; $('main').hidden = false;
+  if (!timer) timer = setInterval(load, 20000);
+}
+
+async function load() {
+  const r = await fetch('admin/stats?token=' + encodeURIComponent(token));
+  if (r.status === 403) { sessionStorage.removeItem('adminToken'); showGate('口令错误或失效，请重新输入'); return; }
+  if (!r.ok) { $('err').textContent = '加载失败：HTTP ' + r.status; return; }
+  $('err').textContent = '';
+  const d = await r.json();
+  $('userCount').textContent = d.userCount;
+  $('activeSessions').textContent = d.activeSessions;
+  $('recordsCount').textContent = d.recordsCount;
+  $('feedbackCount').textContent = d.feedbackCount;
+  $('updated').textContent = '更新于 ' + new Date().toLocaleTimeString() + ' · 每20秒自动刷新';
+
+  $('users').replaceChildren(...(d.users.length ? d.users.map(u => {
+    const s = document.createElement('span'); s.className = 'pill'; s.textContent = u; return s;
+  }) : [Object.assign(document.createElement('div'), { className: 'empty', textContent: '暂无注册账号' })]));
+
+  if (d.feedback.length) {
+    const t = document.createElement('table');
+    const head = t.createTHead().insertRow();
+    for (const h of ['时间', '学号', '模块', '内容']) head.insertCell().textContent = h;
+    const body = t.createTBody();
+    for (const f of d.feedback) {
+      const row = body.insertRow();
+      const c0 = row.insertCell(); c0.className = 'time'; c0.textContent = new Date(f.time * 1000).toLocaleString();
+      row.insertCell().textContent = f.studentId;
+      row.insertCell().textContent = f.context || '—';
+      row.insertCell().textContent = f.content;
+    }
+    $('feedbackBox').replaceChildren(t);
+  } else {
+    $('feedbackBox').replaceChildren(Object.assign(document.createElement('div'), { className: 'empty', textContent: '暂无反馈' }));
+  }
+}
+
+$('gate').addEventListener('submit', e => {
+  e.preventDefault();
+  token = $('tokenInput').value.trim();
+  sessionStorage.setItem('adminToken', token);
+  showMain(); load();
+});
+$('refresh').addEventListener('click', load);
+$('quit').addEventListener('click', () => { sessionStorage.removeItem('adminToken'); token = ''; showGate(''); });
+
+if (token) { sessionStorage.setItem('adminToken', token); showMain(); load(); }
+else showGate();
+</script>
+</body>
+</html>
