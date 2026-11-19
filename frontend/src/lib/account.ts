@@ -9,7 +9,7 @@ const SESSION_KEY = 'mse-agent.session'
 const API_KEY_KEY = 'mse-agent.apiKey'
 
 // 用户自带的 DeepSeek Key：只存本浏览器 localStorage，随 /chat 请求体发给后端，
-// 不进学习记录、不同步。为空则后端回退服务器 DEEPSEEK_API_KEY。
+// 不进学习记录、不同步；服务端不持有默认 Key，必填才能进入。
 export function apiKey(): string {
   try { return localStorage.getItem(API_KEY_KEY) ?? '' } catch { return '' }
 }

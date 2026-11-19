@@ -50,7 +50,6 @@ def _clean_api_key(raw: str) -> str:
     return ""
 
 
-API_KEY = _clean_api_key(os.environ.get("DEEPSEEK_API_KEY", ""))
 BASE_URL = os.environ.get("BASE_URL", "https://api.deepseek.com/v1").strip().strip('"').strip("'")
 # ★ 兜底默认值必须跟 .env.example 一致。DeepSeek 现在只提供
 #   deepseek-flash（支持图片）和 deepseek-v4-pro（纯文本），deepseek-chat 已经下线。
@@ -77,10 +76,6 @@ def looks_like_placeholder(key: str) -> bool:
         return True  # 去掉前缀后几乎全是同一个字符，是占位符
     return False
 
-
-def has_api_key() -> bool:
-    """能不能真调模型。占位符一律算没有 —— 让前端老老实实退回 mock 模式。"""
-    return not looks_like_placeholder(API_KEY)
 
 RAG_TOP_K = int(os.environ.get("RAG_TOP_K", "4"))
 MAX_TURNS = int(os.environ.get("MAX_TURNS", "6"))

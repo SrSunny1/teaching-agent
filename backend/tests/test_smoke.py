@@ -137,7 +137,6 @@ def _turns(repeat_name: bool) -> list:
 async def _drive(turns: list) -> list:
     import app.chat as chat
 
-    config.API_KEY = "fake-key-for-test"
     counter = {"n": 0}
 
     class _Completions:
@@ -156,7 +155,8 @@ async def _drive(turns: list) -> list:
         return [
             e
             async for e in chat.run_chat(
-                [{"role": "user", "content": "45钢淬火后200℃回火,硬度多少?"}]
+                [{"role": "user", "content": "45钢淬火后200℃回火,硬度多少?"}],
+                api_key="fake-key-for-test",
             )
         ]
     finally:

@@ -234,10 +234,10 @@ export default function App() {
   /* ── 探测后端，决定走真实流还是 mock ── */
   useEffect(() => {
     let alive = true
-    probeBackend().then(({ ok, hasKey, model }) => {
+    probeBackend().then(({ ok, model }) => {
       if (!alive) return
-      // hasKey 只看服务器 env；用户在顶栏填了自己的 Key 也能走真实流
-      setConnection(ok && (hasKey || Boolean(apiKey())) ? 'live' : 'mock')
+      // 服务端不持有模型 Key——只有学生自带的 Key 才能走真实流
+      setConnection(ok && Boolean(apiKey()) ? 'live' : 'mock')
       // 顶栏芯片显示后端**实际**用的模型 —— 以前这里是写死的字符串，
       // 换了 .env 界面始终显示旧名字，看起来像配置没生效。
       setModelName(model ?? '')

@@ -119,24 +119,18 @@ async def run_chat(
     """history 为 [{'role': 'user'|'assistant', 'content': str}, ...]
 
     feature 为当前对话所属的功能模块 {id, title, persona}，全局对话传 None。
-    api_key 为用户自带的 Key（前端 localStorage 随请求带上），为空则回退服务器 DEEPSEEK_API_KEY。
+    api_key 为学生自带的 Key（前端 localStorage 随请求带上），必填——服务端不持有任何默认 Key。
 
     ★ 参数必须**可选**且排在 history **之后** —— backend/tests/test_smoke.py 是
       位置传参 `chat.run_chat([{...}])`、只给一个实参，签名一动它就崩。
     """
 
-    key = config._clean_api_key(api_key) or config.API_KEY
+    key = config._clean_api_key(api_key)
     if config.looks_like_placeholder(key):
-        if api_key.strip():
-            yield error("你填写的 API Key 无效（看着像占位符）。请在顶栏「API Key」里检查重填，或清空它改用服务器默认 Key。")
-        elif key.strip():
-            # 填了但看着是占位符 —— 单独提示，否则人会以为「我明明填了啊」
-            yield error(
-                "backend/.env 里的 DEEPSEEK_API_KEY 看着还是个占位符（sk-xxxx…），"
-                "不是真实 Key。请去 platform.deepseek.com 申请一个填进去，然后重启后端。"
-            )
+        if key:
+            yield error("你填写的 API Key 无效（看着像占位符或格式不对）。请在顶栏「API Key」里检查重填。")
         else:
-            yield error("未配置 API Key。请在顶栏「API Key」里填入你的 DeepSeek Key，或由管理员配置 DEEPSEEK_API_KEY。")
+            yield error("未提供 API Key。请填入你的 DeepSeek Key 后再提问。")
         yield done()
         return
 
@@ -309,9 +303,7 @@ async def run_chat(
     except Exception as exc:
         cause = f" ({type(exc.__cause__).__name__}: {exc.__cause__})" if exc.__cause__ else ""
         msg = f"{type(exc).__name__}: {exc}{cause}"
-        for k in {config.API_KEY, key}:
-            if k:
-                msg = msg.replace(k, "***")
+        msg = msg.replace(key, "***")
         yield error(msg)
     finally:
         yield done()

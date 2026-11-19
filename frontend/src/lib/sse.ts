@@ -97,8 +97,6 @@ export async function streamChat(opts: StreamOptions): Promise<void> {
 export interface ProbeResult {
   /** 后端进程是否在跑 */
   ok: boolean
-  /** 后端是否配了 API Key */
-  hasKey: boolean
   /**
    * 后端**实际**在用的模型名（`/health` 报的 `model`）。
    * ★ 顶栏那个芯片必须用它，别写死 —— 写死之后换模型界面永远不跟着变，
@@ -109,8 +107,8 @@ export interface ProbeResult {
 
 /**
  * 探测后端。
- * ★ 后端在跑但**没配 API Key** 时也算不可用 —— 否则前端会走真实流、然后每条消息都报错，
- *   队友 clone 下来忘了填 .env 就会以为项目坏了。这种情况自动退回 mock。
+ * ★ 后端在跑但**学生没填 API Key** 时也算不可用 —— 否则前端会走真实流、然后每条消息都报错，
+ *   这种情况自动退回 mock。
  */
 export async function probeBackend(timeoutMs = 10000): Promise<ProbeResult> {
   try {
@@ -118,14 +116,13 @@ export async function probeBackend(timeoutMs = 10000): Promise<ProbeResult> {
     const t = setTimeout(() => ctrl.abort(), timeoutMs)
     const res = await fetch('/api/health', { signal: ctrl.signal })
     clearTimeout(t)
-    if (!res.ok) return { ok: false, hasKey: false }
-    const data = (await res.json()) as { has_key?: boolean; model?: string }
+    if (!res.ok) return { ok: false }
+    const data = (await res.json()) as { model?: string }
     return {
       ok: true,
-      hasKey: Boolean(data?.has_key),
       model: typeof data?.model === 'string' ? data.model : undefined,
     }
   } catch {
-    return { ok: false, hasKey: false }
+    return { ok: false }
   }
 }

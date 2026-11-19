@@ -119,7 +119,7 @@ class ChatRequest(BaseModel):
     session_id: str = "local"
     messages: list[ChatMessage]
     feature: FeatureContext | None = None
-    # 用户自带的 API Key（前端 localStorage 随请求带上）；为空则回退服务器 DEEPSEEK_API_KEY
+    # 学生自带的 API Key（前端 localStorage 随请求带上），必填——服务端不持有默认 Key
     apiKey: str = Field(default="", max_length=200)
 
 
@@ -140,7 +140,6 @@ async def root():
             "GET /docs": "自动生成的接口文档",
         },
         "model": config.MODEL,
-        "has_key": config.has_api_key(),
         "tools": sorted(TOOLS),
     }
 
@@ -151,7 +150,6 @@ async def health() -> dict:
     return {
         "ok": True,
         "model": config.MODEL,
-        "has_key": config.has_api_key(),
         "tools": sorted(TOOLS),
     }
 
@@ -188,13 +186,8 @@ async def rag_autostart_log(who: str = Depends(student)) -> dict:
     log_text = p.read_text(errors="replace")[-4000:] if p.exists() else "(暂无拉起日志)"
     return {
         "reachable": rag_autostart._reachable(),
-        "key_info": {
-            "has_key": config.has_api_key(),
-            "len": len(config.API_KEY),
-            "prefix": config.API_KEY[:3] if config.API_KEY else "",
-            "model": config.MODEL,
-            "base_url": config.BASE_URL,
-        },
+        "model": config.MODEL,
+        "base_url": config.BASE_URL,
         "log": log_text,
     }
 
