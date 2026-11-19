@@ -6,15 +6,23 @@ let queue: Promise<void> = Promise.resolve()
 let failure = ''
 let generation = 0
 const SESSION_KEY = 'mse-agent.session'
-const API_KEY_KEY = 'mse-agent.apiKey'
+const API_KEY_PREFIX = 'mse-agent.apiKey.'
+const LEGACY_API_KEY = 'mse-agent.apiKey' // 旧版不分账号的 key，登录后迁移到当前账号名下
 
-// 用户自带的 DeepSeek Key：只存本浏览器 localStorage，随 /chat 请求体发给后端，
-// 不进学习记录、不同步；服务端不持有默认 Key，必填才能进入。
+// 用户自带的 DeepSeek Key：按账号存在本浏览器 localStorage（mse-agent.apiKey.<学号>），
+// 随 /chat 请求体发给后端，不进学习记录、不同步；服务端不持有默认 Key，必填才能进入。
 export function apiKey(): string {
-  try { return localStorage.getItem(API_KEY_KEY) ?? '' } catch { return '' }
+  try {
+    if (!studentId) return ''
+    const scoped = localStorage.getItem(API_KEY_PREFIX + studentId)
+    if (scoped) return scoped
+    const legacy = localStorage.getItem(LEGACY_API_KEY)
+    if (legacy) { localStorage.setItem(API_KEY_PREFIX + studentId, legacy); localStorage.removeItem(LEGACY_API_KEY) }
+    return legacy ?? ''
+  } catch { return '' }
 }
 export function setApiKey(value: string) {
-  try { localStorage.setItem(API_KEY_KEY, value.trim()) } catch { /* ignore */ }
+  try { if (studentId) localStorage.setItem(API_KEY_PREFIX + studentId, value.trim()) } catch { /* ignore */ }
 }
 
 export const authHeaders = (): Record<string, string> => token ? { Authorization: `Bearer ${token}` } : {}

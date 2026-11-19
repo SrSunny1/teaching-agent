@@ -14,7 +14,7 @@ export default function AuthGate() {
   const [keyReady, setKeyReady] = useState(() => Boolean(apiKey()))
   const [chatBusy, setChatBusy] = useState(false)
   useEffect(() => {
-    restoreSession().then(id => { if (id) setUser(id) })
+    restoreSession().then(id => { if (id) { setUser(id); setKeyReady(Boolean(apiKey())) } })
   }, [])
   useEffect(() => {
     const listener = (e: Event) => setSync((e as CustomEvent<string>).detail)
@@ -102,7 +102,7 @@ export default function AuthGate() {
           if (password !== fields.get('confirm')) throw new Error('两次密码不一致')
           await accountRequest('register', { studentId: id, password }).catch(() => null)
         }
-        await signIn(id, password); setUser(studentId); setSync('已保存')
+        await signIn(id, password); setUser(studentId); setSync('已保存'); setKeyReady(Boolean(apiKey()))
       } catch (err) { setError(err instanceof Error ? err.message : '连接失败，请确认后端已启动') } finally { setBusy(false) }
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
