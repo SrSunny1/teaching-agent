@@ -23,8 +23,6 @@ export function apiKey(): string {
 }
 export function setApiKey(value: string) {
   try { if (studentId) localStorage.setItem(API_KEY_PREFIX + studentId, value.trim()) } catch { /* ignore */ }
-  // 上报「已填 Key」激活标记：后台只统计注册且提交了 Key 的账号
-  if (value.trim() && studentId) void accountRequest('key-submitted', {}).catch(() => { /* 离线失败无碍，/chat 带 Key 时会补标 */ })
 }
 
 export const authHeaders = (): Record<string, string> => token ? { Authorization: `Bearer ${token}` } : {}

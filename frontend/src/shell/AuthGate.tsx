@@ -39,11 +39,16 @@ export default function AuthGate() {
   if (user && !keyReady) return <main className="auth-page" data-theme="light">
     <img className="auth-background" src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=2200&q=85" alt="" referrerPolicy="no-referrer" />
     <header className="auth-brand"><img className="auth-brand-mark" src="/agent-logo.png" alt="" /><span>材料物理实验<span className="auth-brand-sub">教学 Agent</span></span></header>
-    <form className="auth-form" onSubmit={e => {
+    <form className="auth-form" onSubmit={async e => {
       e.preventDefault(); const fields = new FormData(e.currentTarget)
       const key = String(fields.get('apiKey') ?? '').trim()
       if (!key) { setError('必须填入 API Key 才能进入'); return }
-      setApiKey(key); setKeyReady(true); setError('')
+      setBusy(true); setError('')
+      try {
+        await accountRequest('verify-key', { apiKey: key })  // 后端真实调 DeepSeek 验活，假 Key 进不来
+        setApiKey(key); setKeyReady(true)
+      } catch (err) { setError(err instanceof Error ? err.message : '验证失败，请重试') }
+      finally { setBusy(false) }
     }}>
       <div className="auth-eyebrow">ONE MORE STEP</div>
       <h1>还差一步：填入 API Key</h1>
@@ -52,7 +57,7 @@ export default function AuthGate() {
       <label style={field}>API Key<input style={input} name="apiKey" type="password" autoComplete="off" required maxLength={200} placeholder="sk-..." autoFocus /></label>
       <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>到 platform.deepseek.com 注册申请（新用户有免费额度），粘贴到上方。Key 只保存在本浏览器，不会上传服务器。</p>
       <p className="auth-error" role="alert">{error}</p>
-      <button className="auth-submit">保存并进入</button>
+      <button className="auth-submit" disabled={busy}>{busy ? '正在验证 Key…' : '验证并进入'}</button>
       <div className="auth-switch"><span>换个账号？</span><button type="button" disabled={busy} onClick={logout}>退出登录</button></div>
     </form>
     <footer className="auth-footer">材料科学 · 实验探索 · 自主学习</footer>
@@ -80,15 +85,20 @@ export default function AuthGate() {
       <label style={field}>确认新密码<input style={input} name="confirm" type="password" autoComplete="new-password" required maxLength={128} /></label>
       <button className="chip" disabled={busy || chatBusy}>确认修改</button>
     </form>}
-    {apiKeyOpen && <form style={{ padding: 16 }} onSubmit={e => {
+    {apiKeyOpen && <form style={{ padding: 16 }} onSubmit={async e => {
       e.preventDefault(); const fields = new FormData(e.currentTarget)
       const key = String(fields.get('apiKey') ?? '').trim()
-      setApiKey(key); setKeyReady(Boolean(key)); setApiKeyOpen(false)
-      setError('API Key 已保存（仅本浏览器，刷新生效）')
+      if (!key) { setApiKey(''); setKeyReady(false); setApiKeyOpen(false); return }
+      setBusy(true); setError('')
+      try {
+        await accountRequest('verify-key', { apiKey: key })
+        setApiKey(key); setApiKeyOpen(false); setError('API Key 已保存（仅本浏览器，下次对话生效）')
+      } catch (err) { setError(err instanceof Error ? err.message : '验证失败') }
+      finally { setBusy(false) }
     }}>
       <label style={field}>DeepSeek API Key<input style={input} name="apiKey" type="password" defaultValue={apiKey()} autoComplete="off" maxLength={200} placeholder="sk-..." autoFocus /></label>
       <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>去 platform.deepseek.com 申请后粘贴到这里，只保存在本浏览器；清空保存会被要求重新填写。</p>
-      <button className="chip">保存</button>
+      <button className="chip" disabled={busy}>{busy ? '正在验证 Key…' : '保存'}</button>
     </form>}
     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
       {busy && <div style={{ position: 'absolute', inset: 0, zIndex: 9999, background: 'var(--bg-panel)' }} role="status">正在保存并退出当前会话…</div>}

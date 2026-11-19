@@ -61,6 +61,9 @@ class AccountsTest(unittest.TestCase):
                 self.assertEqual(data['userCount'], 0)
                 self.assertEqual(data['registeredCount'], 1)
                 self.assertEqual(data['users'], [])
+                # 明显占位符的 Key 过不了验证（不触网，本地判 400）
+                self.assertEqual(client.post('/auth/verify-key', json={'apiKey': 'sk-xxxx'},
+                                             headers={'Authorization': 'Bearer ' + token}).status_code, 400)
                 self.assertEqual(client.post('/auth/key-submitted',
                                              headers={'Authorization': 'Bearer ' + token}).status_code, 200)
                 data = client.get('/auth/admin/stats', headers={'X-Admin-Token': 'test-admin-token'}).json()

@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
+from . import config
+
 DB = Path(os.environ.get('STUDENT_DB', Path(__file__).resolve().parents[1] / 'private' / 'students.sqlite3'))
 router = APIRouter(prefix='/auth')
 
@@ -235,6 +237,26 @@ def mark_key_submitted(name: str):
 
 @router.post('/key-submitted')
 def key_submitted(who=Depends(student)):
+    mark_key_submitted(who)
+    return {'ok': True}
+
+
+class KeySubmission(BaseModel):
+    apiKey: str = Field(min_length=1, max_length=200)
+
+
+@router.post('/verify-key')
+async def verify_key(req: KeySubmission, who=Depends(student)):
+    """学生填的 Key 真实调 DeepSeek 验活（models.list 最便宜的调用）；
+    有效才打激活标记 —— 随便编的字符串过不了这道门。"""
+    key = config._clean_api_key(req.apiKey)
+    if not key or config.looks_like_placeholder(key):
+        raise HTTPException(400, 'Key 为空或格式明显不对')
+    try:
+        from openai import AsyncOpenAI  # 懒加载，和 chat.py 同一个依赖
+        await AsyncOpenAI(api_key=key, base_url=config.BASE_URL, timeout=15).models.list()
+    except Exception as exc:
+        raise HTTPException(400, f'Key 验证失败（{type(exc).__name__}）。请确认是从 platform.deepseek.com 复制的有效 Key')
     mark_key_submitted(who)
     return {'ok': True}
 
