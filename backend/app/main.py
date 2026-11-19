@@ -119,6 +119,8 @@ class ChatRequest(BaseModel):
     session_id: str = "local"
     messages: list[ChatMessage]
     feature: FeatureContext | None = None
+    # 用户自带的 API Key（前端 localStorage 随请求带上）；为空则回退服务器 DEEPSEEK_API_KEY
+    apiKey: str = Field(default="", max_length=200)
 
 
 @app.get("/")
@@ -160,7 +162,7 @@ async def chat(req: ChatRequest, who: str = Depends(student)) -> StreamingRespon
     feature = req.feature.model_dump() if req.feature else None
 
     async def gen():
-        async for event in run_chat(history, feature=feature):
+        async for event in run_chat(history, feature=feature, api_key=req.apiKey):
             yield encode(event)
         yield "data: [DONE]\n\n"
 

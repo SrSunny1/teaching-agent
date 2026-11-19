@@ -6,6 +6,16 @@ let queue: Promise<void> = Promise.resolve()
 let failure = ''
 let generation = 0
 const SESSION_KEY = 'mse-agent.session'
+const API_KEY_KEY = 'mse-agent.apiKey'
+
+// 用户自带的 DeepSeek Key：只存本浏览器 localStorage，随 /chat 请求体发给后端，
+// 不进学习记录、不同步。为空则后端回退服务器 DEEPSEEK_API_KEY。
+export function apiKey(): string {
+  try { return localStorage.getItem(API_KEY_KEY) ?? '' } catch { return '' }
+}
+export function setApiKey(value: string) {
+  try { localStorage.setItem(API_KEY_KEY, value.trim()) } catch { /* ignore */ }
+}
 
 export const authHeaders = (): Record<string, string> => token ? { Authorization: `Bearer ${token}` } : {}
 export async function accountRequest(path: string, body?: unknown, method = 'POST') {

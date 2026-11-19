@@ -24,11 +24,11 @@ from .tools import TOOLS, specs
 _client_cache: tuple[Any, str, str, Any] | None = None
 
 
-def _get_client() -> Any:
+def _get_client(api_key: str) -> Any:
     global _client_cache
-    key = (AsyncOpenAI, config.API_KEY, config.BASE_URL)
+    key = (AsyncOpenAI, api_key, config.BASE_URL)
     if _client_cache is None or _client_cache[:3] != key:
-        _client_cache = (*key, AsyncOpenAI(api_key=config.API_KEY, base_url=config.BASE_URL))
+        _client_cache = (*key, AsyncOpenAI(api_key=api_key, base_url=config.BASE_URL))
     return _client_cache[3]
 
 
@@ -114,29 +114,33 @@ def _requested_structure(history: list[dict[str, Any]]) -> str | None:
 
 
 async def run_chat(
-    history: list[dict[str, Any]], feature: dict[str, Any] | None = None
+    history: list[dict[str, Any]], feature: dict[str, Any] | None = None, api_key: str = ""
 ) -> AsyncIterator[dict]:
     """history 为 [{'role': 'user'|'assistant', 'content': str}, ...]
 
     feature 为当前对话所属的功能模块 {id, title, persona}，全局对话传 None。
+    api_key 为用户自带的 Key（前端 localStorage 随请求带上），为空则回退服务器 DEEPSEEK_API_KEY。
 
     ★ 参数必须**可选**且排在 history **之后** —— backend/tests/test_smoke.py 是
       位置传参 `chat.run_chat([{...}])`、只给一个实参，签名一动它就崩。
     """
 
-    if not config.has_api_key():
-        if config.API_KEY.strip():
+    key = config._clean_api_key(api_key) or config.API_KEY
+    if config.looks_like_placeholder(key):
+        if api_key.strip():
+            yield error("你填写的 API Key 无效（看着像占位符）。请在顶栏「API Key」里检查重填，或清空它改用服务器默认 Key。")
+        elif key.strip():
             # 填了但看着是占位符 —— 单独提示，否则人会以为「我明明填了啊」
             yield error(
                 "backend/.env 里的 DEEPSEEK_API_KEY 看着还是个占位符（sk-xxxx…），"
                 "不是真实 Key。请去 platform.deepseek.com 申请一个填进去，然后重启后端。"
             )
         else:
-            yield error("未配置 DEEPSEEK_API_KEY。请在 backend/.env 里填写后重启后端。")
+            yield error("未配置 API Key。请在顶栏「API Key」里填入你的 DeepSeek Key，或由管理员配置 DEEPSEEK_API_KEY。")
         yield done()
         return
 
-    client = _get_client()
+    client = _get_client(key)
 
     # ★ 图片链路：前端把图片（data URL）挂在最后一条 user 消息的 image 上。
     #   聊天模型是**纯文本**的 —— 所以这里分两件事做：
@@ -278,6 +282,9 @@ async def run_chat(
                     continue
 
                 try:
+                    if slot["name"] == "diagnose_micrograph":
+                        # 仅服务端注入：tool_call 事件已发出（前端看不到），也不会进 convo
+                        args["_api_key"] = key
                     result = await tool.run(args)
                 except Exception as exc:  # 工具挂了不能让整条流断掉
                     msg = f"{type(exc).__name__}: {exc}"
@@ -302,8 +309,9 @@ async def run_chat(
     except Exception as exc:
         cause = f" ({type(exc.__cause__).__name__}: {exc.__cause__})" if exc.__cause__ else ""
         msg = f"{type(exc).__name__}: {exc}{cause}"
-        if config.API_KEY:
-            msg = msg.replace(config.API_KEY, "***")
+        for k in {config.API_KEY, key}:
+            if k:
+                msg = msg.replace(k, "***")
         yield error(msg)
     finally:
         yield done()

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import App from './App'
 import './auth.css'
-import { accountRequest, exportAccount, flushAccount, resetAccount, restoreSession, signIn, studentId } from '../lib/account'
+import { accountRequest, apiKey, exportAccount, flushAccount, resetAccount, restoreSession, setApiKey, signIn, studentId } from '../lib/account'
 
 export default function AuthGate() {
   const [user, setUser] = useState('')
@@ -10,6 +10,7 @@ export default function AuthGate() {
   const [error, setError] = useState('')
   const [sync, setSync] = useState('已保存')
   const [changePassword, setChangePassword] = useState(false)
+  const [apiKeyOpen, setApiKeyOpen] = useState(false)
   const [chatBusy, setChatBusy] = useState(false)
   useEffect(() => {
     restoreSession().then(id => { if (id) setUser(id) })
@@ -35,6 +36,7 @@ export default function AuthGate() {
       <strong>账号：{user}</strong><span role="status">{sync}</span>
       <button className="chip" onClick={exportAccount}>导出个人记录备份</button>
       <button className="chip" disabled={busy || chatBusy} onClick={() => setChangePassword(!changePassword)}>修改密码</button>
+      <button className="chip" disabled={busy || chatBusy} onClick={() => setApiKeyOpen(!apiKeyOpen)}>API Key</button>
       <button className="chip" disabled={busy || chatBusy} onClick={logout}>退出登录</button>
       {error && <span role="alert">{error}</span>}
     </header>
@@ -51,6 +53,15 @@ export default function AuthGate() {
       <label style={field}>新密码<input style={input} name="newPassword" type="password" autoComplete="new-password" required maxLength={128} /></label>
       <label style={field}>确认新密码<input style={input} name="confirm" type="password" autoComplete="new-password" required maxLength={128} /></label>
       <button className="chip" disabled={busy || chatBusy}>确认修改</button>
+    </form>}
+    {apiKeyOpen && <form style={{ padding: 16 }} onSubmit={e => {
+      e.preventDefault(); const fields = new FormData(e.currentTarget)
+      setApiKey(String(fields.get('apiKey') ?? '')); setApiKeyOpen(false)
+      setError('API Key 已保存（仅本浏览器，刷新生效）')
+    }}>
+      <label style={field}>DeepSeek API Key<input style={input} name="apiKey" type="password" defaultValue={apiKey()} autoComplete="off" maxLength={200} placeholder="sk-..." /></label>
+      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '0 0 10px' }}>去 platform.deepseek.com 申请后粘贴到这里，只保存在本浏览器；留空则使用服务器默认 Key。</p>
+      <button className="chip">保存</button>
     </form>}
     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
       {busy && <div style={{ position: 'absolute', inset: 0, zIndex: 9999, background: 'var(--bg-panel)' }} role="status">正在保存并退出当前会话…</div>}

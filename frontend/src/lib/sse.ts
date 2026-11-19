@@ -7,7 +7,7 @@
  * 契约见 README.md 的「三、契约」
  */
 import type { Message, SSEEvent } from './types'
-import { authHeaders } from './account'
+import { authHeaders, apiKey } from './account'
 
 const ENDPOINT = '/api/chat'
 
@@ -61,6 +61,8 @@ export async function streamChat(opts: StreamOptions): Promise<void> {
           : { role: m.role, content: m.content },
       ),
       feature: opts.feature ?? null,
+      // 用户自带的 DeepSeek Key，为空则后端用服务器默认
+      apiKey: apiKey(),
     }),
     signal: opts.signal,
   })

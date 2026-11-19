@@ -9,6 +9,7 @@ import type {
 } from '../lib/types'
 import { featureByArtifact, featureById, features } from '../lib/registry'
 import { probeBackend, streamChat } from '../lib/sse'
+import { apiKey } from '../lib/account'
 import { streamMock } from '../lib/mock'
 import {
   GLOBAL_CONV,
@@ -235,7 +236,8 @@ export default function App() {
     let alive = true
     probeBackend().then(({ ok, hasKey, model }) => {
       if (!alive) return
-      setConnection(ok && hasKey ? 'live' : 'mock')
+      // hasKey 只看服务器 env；用户在顶栏填了自己的 Key 也能走真实流
+      setConnection(ok && (hasKey || Boolean(apiKey())) ? 'live' : 'mock')
       // 顶栏芯片显示后端**实际**用的模型 —— 以前这里是写死的字符串，
       // 换了 .env 界面始终显示旧名字，看起来像配置没生效。
       setModelName(model ?? '')

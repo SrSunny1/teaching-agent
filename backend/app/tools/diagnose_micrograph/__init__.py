@@ -77,10 +77,12 @@ async def _run(args: dict) -> ToolResult:
     if not image:
         return ToolResult(summary="未提供图片", detail="请先上传一张金相或试样表面照片。")
 
-    if not config.has_api_key():
+    # chat.py 会把用户自带 Key 注进 _api_key（不经过模型），没有则用服务器默认
+    key = config._clean_api_key(str(args.get("_api_key", ""))) or config.API_KEY
+    if config.looks_like_placeholder(key):
         return ToolResult(
             summary="未配置模型",
-            detail="后端没有可用的 API Key，无法做图像诊断。请在 backend/.env 里填入真实 Key 后重启后端。",
+            detail="没有可用的 API Key，无法做图像诊断。请在顶栏「API Key」里填入有效 Key，或由管理员配置 DEEPSEEK_API_KEY。",
         )
 
     # 允许前端直接传 data URL
@@ -91,7 +93,7 @@ async def _run(args: dict) -> ToolResult:
     else:
         url = f"data:image/jpeg;base64,{image}"
 
-    client = AsyncOpenAI(api_key=config.API_KEY, base_url=config.BASE_URL)
+    client = AsyncOpenAI(api_key=key, base_url=config.BASE_URL)
     try:
         resp = await client.chat.completions.create(
             model=config.VISION_MODEL,
