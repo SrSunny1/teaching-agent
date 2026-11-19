@@ -381,10 +381,10 @@ def admin_page():
 
 @router.get('/admin/stats')
 def admin_stats(_=Depends(admin)):
-    """教师侧只读统计：已激活账号（注册+提交了 API Key）、注册总数、活跃会话、学习记录与全部意见反馈。"""
+    """教师侧只读统计：注册用户（全部）、成功激活用户（提交了有效 API Key）、活跃会话、学习记录与全部意见反馈。"""
     with connect() as db:
-        users = [r['id'] for r in db.execute('SELECT id FROM users WHERE key_set=1 ORDER BY id')]
-        registered = db.execute('SELECT COUNT(*) c FROM users').fetchone()['c']
+        registered = [r['id'] for r in db.execute('SELECT id FROM users ORDER BY id')]
+        activated = [r['id'] for r in db.execute('SELECT id FROM users WHERE key_set=1 ORDER BY id')]
         sessions = db.execute(
             'SELECT COUNT(*) c FROM sessions WHERE expires>?', (time.time(),)
         ).fetchone()['c']
@@ -393,9 +393,10 @@ def admin_stats(_=Depends(admin)):
             'SELECT id, student, body, context, ts FROM feedback ORDER BY id DESC LIMIT 300'
         ).fetchall()
     return {
-        'userCount': len(users),
-        'registeredCount': registered,
-        'users': users,
+        'registeredCount': len(registered),
+        'activatedCount': len(activated),
+        'registeredUsers': registered,
+        'activatedUsers': activated,
         'activeSessions': sessions,
         'recordsCount': records_count,
         'feedbackCount': len(rows),

@@ -57,18 +57,19 @@ class AccountsTest(unittest.TestCase):
                 result = client.get('/auth/admin/stats', headers={'X-Admin-Token': 'test-admin-token'})
                 self.assertEqual(result.status_code, 200)
                 data = result.json()
-                # 只注册没填 Key：计入 registeredCount，不算激活用户
-                self.assertEqual(data['userCount'], 0)
+                # 只注册没填 Key：计入注册用户，不算激活用户
                 self.assertEqual(data['registeredCount'], 1)
-                self.assertEqual(data['users'], [])
+                self.assertEqual(data['activatedCount'], 0)
+                self.assertEqual(data['registeredUsers'], ['20260001'])
+                self.assertEqual(data['activatedUsers'], [])
                 # 明显占位符的 Key 过不了验证（不触网，本地判 400）
                 self.assertEqual(client.post('/auth/verify-key', json={'apiKey': 'sk-xxxx'},
                                              headers={'Authorization': 'Bearer ' + token}).status_code, 400)
                 self.assertEqual(client.post('/auth/key-submitted',
                                              headers={'Authorization': 'Bearer ' + token}).status_code, 200)
                 data = client.get('/auth/admin/stats', headers={'X-Admin-Token': 'test-admin-token'}).json()
-                self.assertEqual(data['userCount'], 1)
-                self.assertEqual(data['users'], ['20260001'])
+                self.assertEqual(data['activatedCount'], 1)
+                self.assertEqual(data['activatedUsers'], ['20260001'])
                 self.assertEqual(data['activeSessions'], 2)
                 self.assertEqual(data['feedbackCount'], 1)
                 self.assertEqual(data['feedback'][0]['studentId'], '20260001')
@@ -131,7 +132,8 @@ class AccountsTest(unittest.TestCase):
             client.post('/auth/feedback', headers=h, json={'content': 'pg 反馈', 'context': 'test'})
             client.post('/auth/key-submitted', headers=h)
             stats = client.get('/auth/admin/stats?token=pg-admin').json()
-            self.assertIn(name, stats['users'])
+            self.assertIn(name, stats['activatedUsers'])
+            self.assertIn(name, stats['registeredUsers'])
             self.assertEqual(stats['feedback'][0]['content'], 'pg 反馈')
         finally:
             os.environ.pop('DATABASE_URL', None)
