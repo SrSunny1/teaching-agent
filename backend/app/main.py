@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, Depends, HTTPException, Request
-from .auth import router as auth_router, student
+from .auth import router as auth_router, student, mark_key_submitted
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -158,6 +158,8 @@ async def health() -> dict:
 async def chat(req: ChatRequest, who: str = Depends(student)) -> StreamingResponse:
     history = [m.model_dump() for m in req.messages]
     feature = req.feature.model_dump() if req.feature else None
+    if req.apiKey.strip():
+        mark_key_submitted(who)  # 带 Key 说明已激活；前端保存时也会上报，这里是兜底
 
     async def gen():
         async for event in run_chat(history, feature=feature, api_key=req.apiKey):

@@ -52,7 +52,7 @@ _PG_UPSERT = {
 }
 
 SCHEMA = '''
-CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, salt TEXT NOT NULL, password TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, salt TEXT NOT NULL, password TEXT NOT NULL, key_set INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS invites (id TEXT PRIMARY KEY, digest TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, student TEXT NOT NULL, expires REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS records (student TEXT PRIMARY KEY, body TEXT NOT NULL, revision INTEGER NOT NULL);
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, stude
 '''
 
 SCHEMA_PG = '''
-CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, salt TEXT NOT NULL, password TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, salt TEXT NOT NULL, password TEXT NOT NULL, key_set INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS invites (id TEXT PRIMARY KEY, digest TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, student TEXT NOT NULL, expires DOUBLE PRECISION NOT NULL);
 CREATE TABLE IF NOT EXISTS records (student TEXT PRIMARY KEY, body TEXT NOT NULL, revision INTEGER NOT NULL);
@@ -135,6 +135,11 @@ def connect():
     db = _raw_connect()
     db.executescript(db.schema)
     try:
+        # 存量库补列（新库 CREATE 已含此列，重复执行报错即跳过）
+        db.execute('ALTER TABLE users ADD COLUMN key_set INTEGER NOT NULL DEFAULT 0')
+    except Exception:
+        pass
+    try:
         yield db
         db.commit()
     except Exception:
@@ -191,7 +196,7 @@ def register(req: Credentials):
         if exists:
             raise HTTPException(400, '该账号已注册，请登录或联系教师重置密码')
         salt = secrets.token_hex(16)
-        db.execute('INSERT INTO users VALUES (?,?,?)', (name, salt, password_hash(req.password, salt)))
+        db.execute('INSERT INTO users (id, salt, password) VALUES (?,?,?)', (name, salt, password_hash(req.password, salt)))
         db.execute('DELETE FROM invites WHERE id=?', (name,))
         db.execute('DELETE FROM attempts WHERE student=?', (name,))
     return {'ok': True}
@@ -208,7 +213,7 @@ def login(req: Credentials):
         salt = secrets.token_hex(16)
         if not row:
             # 容器重启/重新部署后 sqlite 为空，或首次直接点登录：自动建号放行
-            db.execute('INSERT INTO users VALUES (?,?,?)', (name, salt, password_hash(req.password, salt)))
+            db.execute('INSERT INTO users (id, salt, password) VALUES (?,?,?)', (name, salt, password_hash(req.password, salt)))
             db.execute('DELETE FROM invites WHERE id=?', (name,))
         else:
             actual = password_hash(req.password, row['salt'])
@@ -220,6 +225,18 @@ def login(req: Credentials):
         db.execute('INSERT INTO sessions VALUES (?,?,?)', (digest(token), name, time.time() + 8 * 3600))
         db.execute('DELETE FROM attempts WHERE student=?', (name,))
     return {'studentId': name, 'token': token}
+
+
+def mark_key_submitted(name: str):
+    """学生提交了自己的 API Key —— users.key_set 打标，管理页据此区分「已激活」账号。"""
+    with connect() as db:
+        db.execute('UPDATE users SET key_set=1 WHERE id=?', (name,))
+
+
+@router.post('/key-submitted')
+def key_submitted(who=Depends(student)):
+    mark_key_submitted(who)
+    return {'ok': True}
 
 
 @router.post('/logout')
@@ -342,9 +359,10 @@ def admin_page():
 
 @router.get('/admin/stats')
 def admin_stats(_=Depends(admin)):
-    """教师侧只读统计：注册账号、活跃会话、学习记录与全部意见反馈。"""
+    """教师侧只读统计：已激活账号（注册+提交了 API Key）、注册总数、活跃会话、学习记录与全部意见反馈。"""
     with connect() as db:
-        users = [r['id'] for r in db.execute('SELECT id FROM users ORDER BY id')]
+        users = [r['id'] for r in db.execute('SELECT id FROM users WHERE key_set=1 ORDER BY id')]
+        registered = db.execute('SELECT COUNT(*) c FROM users').fetchone()['c']
         sessions = db.execute(
             'SELECT COUNT(*) c FROM sessions WHERE expires>?', (time.time(),)
         ).fetchone()['c']
@@ -354,6 +372,7 @@ def admin_stats(_=Depends(admin)):
         ).fetchall()
     return {
         'userCount': len(users),
+        'registeredCount': registered,
         'users': users,
         'activeSessions': sessions,
         'recordsCount': records_count,

@@ -57,6 +57,13 @@ class AccountsTest(unittest.TestCase):
                 result = client.get('/auth/admin/stats', headers={'X-Admin-Token': 'test-admin-token'})
                 self.assertEqual(result.status_code, 200)
                 data = result.json()
+                # 只注册没填 Key：计入 registeredCount，不算激活用户
+                self.assertEqual(data['userCount'], 0)
+                self.assertEqual(data['registeredCount'], 1)
+                self.assertEqual(data['users'], [])
+                self.assertEqual(client.post('/auth/key-submitted',
+                                             headers={'Authorization': 'Bearer ' + token}).status_code, 200)
+                data = client.get('/auth/admin/stats', headers={'X-Admin-Token': 'test-admin-token'}).json()
                 self.assertEqual(data['userCount'], 1)
                 self.assertEqual(data['users'], ['20260001'])
                 self.assertEqual(data['activeSessions'], 2)
@@ -119,6 +126,7 @@ class AccountsTest(unittest.TestCase):
                                         json={'data': {'a': '2'}, 'revision': 1}).status_code, 200)
             self.assertEqual(client.get('/auth/records', headers=h).json()['data'], {'a': '2'})
             client.post('/auth/feedback', headers=h, json={'content': 'pg 反馈', 'context': 'test'})
+            client.post('/auth/key-submitted', headers=h)
             stats = client.get('/auth/admin/stats?token=pg-admin').json()
             self.assertIn(name, stats['users'])
             self.assertEqual(stats['feedback'][0]['content'], 'pg 反馈')

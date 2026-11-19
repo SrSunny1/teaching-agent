@@ -64,12 +64,12 @@
     </header>
     <div class="err" id="err"></div>
     <div class="cards">
-      <div class="card"><div class="num" id="userCount">–</div><div class="label">注册账号</div></div>
+      <div class="card"><div class="num" id="userCount">–</div><div class="label">已激活账号（注册+填Key）</div></div>
       <div class="card"><div class="num" id="activeSessions">–</div><div class="label">活跃会话（8h内登录）</div></div>
       <div class="card"><div class="num" id="recordsCount">–</div><div class="label">已存学习记录</div></div>
       <div class="card"><div class="num" id="feedbackCount">–</div><div class="label">意见反馈</div></div>
     </div>
-    <h2>注册账号</h2>
+    <h2 id="usersTitle">已激活账号</h2>
     <div class="pills" id="users"></div>
     <h2>意见反馈</h2>
     <div id="feedbackBox"></div>
@@ -103,10 +103,11 @@ async function load() {
   $('recordsCount').textContent = d.recordsCount;
   $('feedbackCount').textContent = d.feedbackCount;
   $('updated').textContent = '更新于 ' + new Date().toLocaleTimeString() + ' · 每20秒自动刷新';
+  $('usersTitle').textContent = '已激活账号（注册总数 ' + (d.registeredCount ?? d.userCount) + '）';
 
   $('users').replaceChildren(...(d.users.length ? d.users.map(u => {
     const s = document.createElement('span'); s.className = 'pill'; s.textContent = u; return s;
-  }) : [Object.assign(document.createElement('div'), { className: 'empty', textContent: '暂无注册账号' })]));
+  }) : [Object.assign(document.createElement('div'), { className: 'empty', textContent: '暂无已激活账号' })]));
 
   if (d.feedback.length) {
     const t = document.createElement('table');

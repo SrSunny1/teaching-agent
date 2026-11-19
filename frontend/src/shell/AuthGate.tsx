@@ -14,7 +14,11 @@ export default function AuthGate() {
   const [keyReady, setKeyReady] = useState(() => Boolean(apiKey()))
   const [chatBusy, setChatBusy] = useState(false)
   useEffect(() => {
-    restoreSession().then(id => { if (id) { setUser(id); setKeyReady(Boolean(apiKey())) } })
+    restoreSession().then(id => { if (id) {
+      setUser(id); const has = Boolean(apiKey()); setKeyReady(has)
+      // 本机已有 Key 但服务器没标记（老版本存的）→ 顺手补报激活
+      if (has) void accountRequest('key-submitted', {}).catch(() => {})
+    } })
   }, [])
   useEffect(() => {
     const listener = (e: Event) => setSync((e as CustomEvent<string>).detail)
@@ -102,7 +106,9 @@ export default function AuthGate() {
           if (password !== fields.get('confirm')) throw new Error('两次密码不一致')
           await accountRequest('register', { studentId: id, password }).catch(() => null)
         }
-        await signIn(id, password); setUser(studentId); setSync('已保存'); setKeyReady(Boolean(apiKey()))
+        await signIn(id, password); setUser(studentId); setSync('已保存')
+        const has = Boolean(apiKey()); setKeyReady(has)
+        if (has) void accountRequest('key-submitted', {}).catch(() => {})
       } catch (err) { setError(err instanceof Error ? err.message : '连接失败，请确认后端已启动') } finally { setBusy(false) }
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
